@@ -1,0 +1,129 @@
+---
+# yaml-language-server: $schema=https://squidfunk.github.io/mkdocs-material/schema.json
+site_name: RL QP Controller
+site_description: Deploy ONNX reinforcement-learning policies through an mc_rtc controller with optional QP constraint enforcement.
+site_author: RL QP Controller contributors
+site_url: https://isri-aist.github.io/new-rl-qp-controller/
+repo_url: https://github.com/isri-aist/new-rl-qp-controller
+repo_name: new-rl-qp-controller@main
+edit_uri: edit/main/docs/content/
+
+docs_dir: content/
+
+nav:
+  - Overview: index.md
+  - Tutorial:
+      - tutorial/index.md
+      - 1. Fork and rename: tutorial/01-fork-and-rename.md
+      - 2. Configure the controller: tutorial/02-controller-configuration.md
+      - 3. Wire up state estimation: tutorial/03-state-estimation.md
+      - 4. Define the training convention: tutorial/04-training-convention.md
+      - 5. Configure the policy: tutorial/05-policy-configuration.md
+      - 6. Configure the observations: tutorial/06-observations-configuration.md
+      - 7. Run and validate: tutorial/07-running-and-validating.md
+      - 8. Next steps: tutorial/08-next-steps.md
+  - Reference:
+      - reference/index.md
+      - Architecture: reference/architecture.md
+      - Controller configuration: reference/controller-configuration.md
+      - Training conventions: reference/conventions.md
+      - Available policy options: reference/policy-options.md
+      - Available observations: reference/observations.md
+      - Add an observation: reference/add-observation.md
+      - Logging: reference/logging.md
+      - Adaptation advice: reference/adaptation-advice.md
+  - Troubleshooting: troubleshooting.md
+
+theme:
+  name: material
+  custom_dir: overrides
+  language: en
+  logo: assets/logo.png
+  favicon: assets/icon.png
+  icon:
+    repo: fontawesome/brands/github
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: blue grey
+      accent: blue
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: blue grey
+      accent: blue
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  font:
+    code: JetBrains Mono
+  features:
+    - navigation.top
+    - navigation.indexes
+    - navigation.footer
+    - toc.follow
+    - content.code.annotate
+    - content.code.copy
+    - content.action.edit
+    - content.action.view
+
+extra_css:
+  - stylesheets/extra.css
+
+extra:
+  controller_tagline: A reusable mc_rtc architecture for deploying reinforcement-learning policies with optional QP constraint enforcement.
+  repositories:
+    template: https://github.com/isri-aist/new-rl-qp-controller/tree/main
+    g1: https://github.com/Alhuuin/g1_rl_qp_controller
+    h1: https://github.com/Alhuuin/h1_rl_qp_controller
+    hrp5p: https://github.com/bastien-muraccioli/hrp5p_rl_qp_controller
+  header_links:
+    - name: Code
+      url: https://github.com/isri-aist/new-rl-qp-controller
+    - name: Paper
+      url: https://safe-rl-qp.github.io/
+    - name: Ecosystem
+      url: https://github.com/safe-rl-qp/awesome-safe-rl-qp
+  footer_links:
+    - name: GitHub
+      url: https://github.com/isri-aist/new-rl-qp-controller
+    - name: Paper
+      url: https://arxiv.org/abs/2607.14488
+
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - toc:
+      permalink: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      guess_lang: false
+  - pymdownx.inlinehilite
+  - pymdownx.saneheaders
+  - pymdownx.smartsymbols
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+
+plugins:
+  - git-revision-date-localized:
+      enable_creation_date: true
+      fallback_to_build_date: true

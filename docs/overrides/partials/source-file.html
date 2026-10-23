@@ -1,0 +1,26 @@
+{# Explicit labels for the dates provided by git-revision-date-localized. #}
+{% if page.meta %}
+  {% if page.meta.git_revision_date_localized %}
+    {% set updated = page.meta.git_revision_date_localized %}
+  {% elif page.meta.revision_date %}
+    {% set updated = page.meta.revision_date %}
+  {% endif %}
+  {% if page.meta.git_creation_date_localized %}
+    {% set created = page.meta.git_creation_date_localized %}
+  {% endif %}
+{% endif %}
+
+{% if updated or created %}
+  {% if created %}
+    <!-- <span class="controller-page-date">
+      {% include ".icons/material/clock-plus-outline.svg" %}
+      <strong>Created:</strong> {{ created }}
+    </span>
+  {% endif %}
+  {% if updated %}
+    <span class="controller-page-date">
+      {% include ".icons/material/clock-edit-outline.svg" %}
+      <strong>Last updated:</strong> {{ updated }}
+    </span> -->
+  {% endif %}
+{% endif %}

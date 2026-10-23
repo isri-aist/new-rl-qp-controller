@@ -4,9 +4,15 @@ on:
   push:
     branches:
       - '**'
+    paths-ignore:
+      - 'docs/**'
+      - '.github/workflows/documentation.yml'
   pull_request:
     branches:
       - '**'
+    paths-ignore:
+      - 'docs/**'
+      - '.github/workflows/documentation.yml'
   schedule:
     # Run on Sunday, Tuesday and Thursday nights
     - cron: '0 23 * * 0,1,4'

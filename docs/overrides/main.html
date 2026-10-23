@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block header %}
+<header class="md-header controller-header{% if page and page.is_homepage %} controller-header--home{% else %} controller-header--inner{% endif %}" data-md-component="header" data-is-home="{% if page and page.is_homepage %}true{% else %}false{% endif %}">
+  <nav class="md-header__inner md-grid controller-header__bar" aria-label="Header">
+    <label class="md-header__button md-icon" for="__drawer" aria-label="Open navigation">
+      {% include ".icons/material/menu.svg" %}
+    </label>
+
+    <a href="{{ config.site_url | default(nav.homepage.url, true) | url }}" class="controller-home" aria-label="Go to the documentation home page">
+      {% include ".icons/material/home.svg" %}
+    </a>
+
+    <a href="{{ config.site_url | default(nav.homepage.url, true) | url }}" class="controller-title" aria-label="{{ config.site_name }}">
+      {{ config.site_name }}
+    </a>
+
+    <div class="controller-header__spacer"></div>
+
+    {% if not (page and page.is_homepage) %}
+      <button class="controller-header__toggle md-icon" type="button" aria-expanded="false" aria-controls="controller-showcase" aria-label="Toggle project links">
+        {% include ".icons/material/chevron-down.svg" %}
+      </button>
+    {% endif %}
+
+    {% if config.theme.palette %}
+      {% include "partials/palette.html" %}
+    {% endif %}
+  </nav>
+
+  <div id="controller-showcase" class="controller-header__showcase" aria-label="Project links">
+    <div class="md-grid controller-header__showcase-inner">
+      <a href="{{ config.site_url | default(nav.homepage.url, true) | url }}" class="controller-showcase-logo" aria-label="{{ config.site_name }} home">
+        <img src="{{ 'assets/logo.png' | url }}" alt="{{ config.site_name }} logo">
+      </a>
+
+      <div class="controller-header-links">
+        {% for link in config.extra.header_links %}
+        <a href="{{ link.url }}" class="controller-header-link">
+          <span class="controller-header-link__icon" aria-hidden="true">
+            {% if link.name == "Code" %}
+              {% include ".icons/fontawesome/brands/github.svg" %}
+            {% elif link.name == "Paper" %}
+              {% include ".icons/material/file-document-outline.svg" %}
+            {% else %}
+              {% include ".icons/material/transit-connection-variant.svg" %}
+            {% endif %}
+          </span>
+          <span>{{ link.name }}</span>
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</header>
+
+<script>
+  (() => {
+    const header = document.querySelector(".controller-header");
+    if (!header) return;
+    const isHome = header.dataset.isHome === "true";
+    const toggle = header.querySelector(".controller-header__toggle");
+
+    const updateHeader = () => {
+      if(isHome) {
+        header.classList.toggle("controller-header--scrolled", window.scrollY > 8);
+      }
+    };
+
+    if(toggle) {
+      toggle.addEventListener("click", () => {
+        const isOpen = header.classList.toggle("controller-header--showcase-open");
+        toggle.setAttribute("aria-expanded", String(isOpen));
+      });
+    }
+
+    updateHeader();
+    window.addEventListener("scroll", updateHeader, { passive: true });
+  })();
+</script>
+{% endblock %}
+
+{% block footer %}
+<footer class="controller-footer">
+  <strong>{{ config.site_name }}</strong>
+  <p>{{ config.extra.controller_tagline }}</p>
+  <div>
+    {% for link in config.extra.footer_links %}
+      <a href="{{ link.url }}">{{ link.name }}</a>{% if not loop.last %}<span> | </span>{% endif %}
+    {% endfor %}
+  </div>
+</footer>
+{% endblock %}

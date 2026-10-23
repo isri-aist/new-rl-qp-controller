@@ -14,6 +14,8 @@ repos:
   - id: check-executables-have-shebangs
   - id: check-merge-conflict
   - id: check-yaml
+    # mkdocs.yml uses !!python/name tags
+    exclude: ^docs/mkdocs\.yml$
   - id: destroyed-symlinks
   - id: detect-private-key
   - id: end-of-file-fixer

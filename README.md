@@ -38,9 +38,17 @@ If the target robot is already supported, please refer to the corresponding repo
 
 The complete documentation, including the controller architecture, observation system, policy configuration, adaptation guide and API reference, is available at:
 
-**https://alhuuin.github.io/rl-qp-controller.github.io/**
+**https://isri-aist.github.io/new-rl-qp-controller/**
 
 The documentation also includes practical guides for adapting the controller to new robots and examples.
+
+Its sources live in `docs/` (MkDocs Material) and are deployed to the `gh-pages` branch by the `Documentation` workflow on every push to `main`. To preview it locally with Docker:
+
+```bash
+cd docs
+make            # serve on http://localhost:8000 with live reload
+make build      # build the static website
+```
 
 ## Template layout
 
