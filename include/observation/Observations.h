@@ -71,34 +71,67 @@ private:
   std::string sensorName_ = "FloatingBase";
 };
 
-/** @brief Base angular velocity in the configured base body frame. */
-class BaseAngVelObservation : public Observation
+/**
+ * @brief Base velocity observation (angular part ω or linear part v), shared by base_ang_vel and base_lin_vel.
+ *
+ * Source (pick one, default: body = base):
+ *   body: base | <body name>   ω and v of the body origin from the observed robot state (any observer)
+ *   sensor: <body sensor name> ω (or v) read from a BodySensor
+ *
+ * sensor_frame: world | local   frame the sensor stores its velocity in
+ *                               default: world for "FloatingBase" (mc_mujoco ground truth),
+ *                                        local for any other sensor (a gyro measures ω in its own frame)
+ *
+ * frame: local | world | heading  output frame (default: local)
+ *   local   : frame of the body (or of the sensor)
+ *   world   : world frame
+ *   heading : world frame rotated by the base yaw only (yaw-aligned, gravity stays on z)
+ */
+class BaseVelocityObservation : public Observation
 {
 public:
-  BaseAngVelObservation(const ObservationConfig & config, const ObservationConvention & convention);
-
   void configure(const ObservationContext & context) override;
   int size() const override { return 3; }
   void compute(const ObservationContext & context, Eigen::Ref<Eigen::VectorXd> out) const override;
 
+protected:
+  BaseVelocityObservation(const ObservationConfig & config, const ObservationConvention & convention, bool angular);
+
 private:
-  std::string sensorName_ = "Accelerometer";
+  enum class Frame
+  {
+    Local,
+    World,
+    Heading
+  };
+
+  bool angular_;
+  bool useSensor_ = false;
+  bool sensorIsWorld_ = false;
+  std::string sensorName_;
+  int bodyIndex_ = -1;
+  Frame frame_ = Frame::Local;
   Eigen::VectorXd scale_;
 };
 
-/** @brief Base linear velocity in the configured base body frame. */
-class BaseLinVelObservation : public Observation
+/** @brief Base angular velocity ω (see BaseVelocityObservation for parameters). */
+class BaseAngVelObservation : public BaseVelocityObservation
 {
 public:
-  BaseLinVelObservation(const ObservationConfig & config, const ObservationConvention & convention);
+  BaseAngVelObservation(const ObservationConfig & config, const ObservationConvention & convention)
+  : BaseVelocityObservation(config, convention, true)
+  {
+  }
+};
 
-  void configure(const ObservationContext & context) override;
-  int size() const override { return 3; }
-  void compute(const ObservationContext & context, Eigen::Ref<Eigen::VectorXd> out) const override;
-
-private:
-  std::string sensorName_ = "Accelerometer";
-  Eigen::VectorXd scale_;
+/** @brief Base linear velocity v of the body origin (see BaseVelocityObservation for parameters). */
+class BaseLinVelObservation : public BaseVelocityObservation
+{
+public:
+  BaseLinVelObservation(const ObservationConfig & config, const ObservationConvention & convention)
+  : BaseVelocityObservation(config, convention, false)
+  {
+  }
 };
 
 /** @brief Last raw policy action. */
@@ -139,12 +172,11 @@ private:
 
 
 /**
- * @brief Base roll/pitch/yaw observation computed from a body sensor orientation.
+ * @brief Base roll/pitch/yaw observation.
  *
- * The default sensor name is "Accelerometer". It can be overridden with:
- *
- * parameters:
- *   sensor: ...
+ * Source (pick one, default: sensor = Accelerometer):
+ *   sensor: <body sensor name>  orientation of a BodySensor (filled by the simulator, the IMU or an observer)
+ *   body: base | <body name>    orientation from the observed robot state (any floating-base observer)
  */
 class BaseOrientationObservation : public Observation
 {
@@ -156,7 +188,9 @@ public:
   void compute(const ObservationContext & context, Eigen::Ref<Eigen::VectorXd> out) const override;
 
 private:
+  bool useSensor_ = true;
   std::string sensorName_ = "Accelerometer";
+  int bodyIndex_ = -1;
   std::vector<int> indexes_ = {0,1,2};
   Eigen::VectorXd scale_;
 };

@@ -86,21 +86,46 @@ The named body must exist on the selected observation robot.
 
 ### `base_ang_vel`
 
-Angular component of the body-frame spatial velocity.
+Angular velocity ω of the base.
 
 | Property | Value |
 |---|---|
 | Size | 3 |
-| Parameters | `sensor` (default `Body`), `scale` |
+| Parameters | `body` (default `base`) or `sensor`, `sensor_frame`, `frame` (default `local`), `scale` |
 
 ### `base_lin_vel`
 
-Linear component of the body-frame spatial velocity.
+Linear velocity v of the base origin.
 
 | Property | Value |
 |---|---|
 | Size | 3 |
-| Parameters | `sensor` (default `Body`), `scale` |
+| Parameters | `body` (default `base`) or `sensor`, `sensor_frame`, `frame` (default `local`), `scale` |
+
+**Source** (`base_ang_vel` and `base_lin_vel`)
+
+| Parameter | Reads | Typical use |
+|---|---|---|
+| `body: base` (default) or `body: <name>` | ω and v of the body origin from the observed robot, written by whichever floating-base observer runs | real robot and simulation |
+| `sensor: FloatingBase` | simulator ground truth filled by mc_mujoco, in the world frame | simulation only |
+| `sensor: <IMU>` | the IMU gyro, ω in the sensor frame | `base_ang_vel` only |
+
+An IMU does not measure v, so `base_lin_vel` with an IMU sensor raises an error. If your interface does fill a linear velocity, set `sensor_frame` explicitly to allow it.
+
+`sensor_frame` (`world` or `local`) says how the sensor stores its velocity. It defaults to `world` for `FloatingBase` and to `local` for any other sensor.
+
+**Output frame** (`frame`)
+
+| Value | Meaning |
+|---|---|
+| `local` (default) | frame of the source body or sensor; what most locomotion policies use |
+| `world` | world frame |
+| `heading` | world frame rotated by the base yaw only: x forward and y left in the horizontal plane, z vertical |
+
+The `world` and `heading` outputs need the source orientation. With `body`, it comes from the observer. With `sensor`, it comes from the sensor orientation, which the simulator, the IMU, or an observer (Tilt with `updateSensor`) must fill.
+
+!!! warning "IMU mounting"
+    With `sensor: <IMU>` and `frame: local`, ω is in the IMU frame. It equals the base frame only if the IMU is mounted without rotation on the base link.
 
 ### `last_action`
 
@@ -130,12 +155,14 @@ The GUI exposes all three values as editable number inputs.
 
 ### `base_orientation`
 
-Roll, pitch, and yaw computed from an mc_rtc body sensor orientation.
+Roll, pitch, and yaw of the base.
 
 | Property | Value |
 |---|---|
 | Default size | 3 |
-| Parameters | `sensor` (default `Accelerometer`), `index` (default `[0,1,2]`), `scale` |
+| Parameters | `sensor` (default `Accelerometer`) or `body` (`base` or a body name), `index` (default `[0,1,2]`), `scale` |
+
+With `sensor`, the orientation comes from the body sensor, so something must fill it: the simulator, the IMU, or an observer such as Tilt with `updateSensor`. With `body`, it comes from the observed robot, written by whichever floating-base observer runs, so it works the same with Tilt, MCWaiko or BodySensor.
 
 `index` can select and reorder RPY components. For example, `[0,1]` returns roll and pitch.
 

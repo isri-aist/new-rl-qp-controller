@@ -172,7 +172,7 @@ void ProjectedGravityObservation::configure(const ObservationContext & context)
   const std::string sensor = readParameter<std::string>(parameters, "sensor", "");
   const std::string body = readParameter<std::string>(parameters, "body", "");
   if (!sensor.empty() && !body.empty())
-    mc_rtc::log::error_and_throw("[Observation:{}] : chose either sensor OR body for souce");
+    mc_rtc::log::error_and_throw("[Observation:{}] Choose either 'sensor' or 'body' as source, not both", name());
 
   if(!sensor.empty())
   {
@@ -212,74 +212,117 @@ void ProjectedGravityObservation::compute(const ObservationContext & context, Ei
 }
 
 //============================================================================//
-// BaseAngVelObservation
+// BaseVelocityObservation (base_ang_vel, base_lin_vel)
 //============================================================================//
 
-BaseAngVelObservation::BaseAngVelObservation(const ObservationConfig & config,
-                                             const ObservationConvention & convention)
-: Observation(config, convention)
+BaseVelocityObservation::BaseVelocityObservation(const ObservationConfig & config,
+                                                 const ObservationConvention & convention,
+                                                 bool angular)
+: Observation(config, convention), angular_(angular)
 {
 }
 
-void BaseAngVelObservation::configure(const ObservationContext & context)
+void BaseVelocityObservation::configure(const ObservationContext & context)
 {
   mc_rtc::Configuration parameters =
     context.convention.resolveObservationParameters(requestedType(), type(), config_.parameters);
 
-  sensorName_ = readParameter<std::string>(parameters, "sensor", std::string("Accelerometer"));
+  const std::string sensor = readParameter<std::string>(parameters, "sensor", std::string(""));
+  const std::string body = readParameter<std::string>(parameters, "body", std::string(""));
+  if(!sensor.empty() && !body.empty())
+    mc_rtc::log::error_and_throw("[Observation:{}] Choose either 'sensor' or 'body' as source, not both", name());
 
-  if(!context.observationRobot.hasBodySensor(sensorName_))
+  if(!sensor.empty())
   {
-    mc_rtc::log::error_and_throw(
-      "[Observation:{}] Body sensor '{}' does not exist on robot '{}'",
-      name(),
-      sensorName_,
-      context.observationRobot.name());
+    useSensor_ = true;
+    sensorName_ = sensor;
+    if(!context.observationRobot.hasBodySensor(sensorName_))
+      mc_rtc::log::error_and_throw("[Observation:{}] Body sensor '{}' does not exist on robot '{}'", name(),
+                                   sensorName_, context.observationRobot.name());
+
+    // FloatingBase is filled by mc_mujoco with ground truth ω and v in the world frame.
+    // Any other sensor is an IMU: its gyro gives ω in the sensor frame.
+    const std::string defaultSensorFrame = sensorName_ == "FloatingBase" ? "world" : "local";
+    const std::string sensorFrame = readParameter<std::string>(parameters, "sensor_frame", defaultSensorFrame);
+    if(sensorFrame != "world" && sensorFrame != "local")
+      mc_rtc::log::error_and_throw("[Observation:{}] sensor_frame must be 'world' or 'local', got '{}'", name(),
+                                   sensorFrame);
+    sensorIsWorld_ = sensorFrame == "world";
+
+    // An IMU does not measure v: refuse instead of silently returning zeros
+    if(!angular_ && sensorName_ != "FloatingBase" && !parameters.has("sensor_frame"))
+      mc_rtc::log::error_and_throw("[Observation:{}] Body sensor '{}' does not provide a linear velocity. Use "
+                                   "'body: base' (observer estimate) or 'sensor: FloatingBase' (simulation), or set "
+                                   "'sensor_frame' if your interface fills it",
+                                   name(), sensorName_);
   }
+  else
+  {
+    useSensor_ = false;
+    const std::string obs_body = (body.empty() || body == "base") ? context.baseBody : body;
+    if(!context.observationRobot.hasBody(obs_body))
+      mc_rtc::log::error_and_throw("[Observation:{}] Body '{}' does not exist on robot '{}'", name(), obs_body,
+                                   context.observationRobot.name());
+    bodyIndex_ = static_cast<int>(context.observationRobot.mb().bodyIndexByName(obs_body));
+  }
+
+  const std::string frame = readParameter<std::string>(parameters, "frame", std::string("local"));
+  if(frame == "local")
+    frame_ = Frame::Local;
+  else if(frame == "world")
+    frame_ = Frame::World;
+  else if(frame == "heading")
+    frame_ = Frame::Heading;
+  else
+    mc_rtc::log::error_and_throw("[Observation:{}] frame must be 'local', 'world' or 'heading', got '{}'", name(),
+                                 frame);
 
   scale_ = readScale(parameters, "scale", 3, 1.0);
 }
 
-void BaseAngVelObservation::compute(const ObservationContext & context, Eigen::Ref<Eigen::VectorXd> out) const
+void BaseVelocityObservation::compute(const ObservationContext & context, Eigen::Ref<Eigen::VectorXd> out) const
 {
-  const auto & imu = context.observationRobot.bodySensor(sensorName_);
-  const Eigen::Vector3d value = imu.angularVelocity();
-  out = value.cwiseProduct(scale_);
-}
+  const auto & robot = context.observationRobot;
 
-//============================================================================//
-// BaseLinVelObservation
-//============================================================================//
-
-BaseLinVelObservation::BaseLinVelObservation(const ObservationConfig & config,
-                                             const ObservationConvention & convention)
-: Observation(config, convention)
-{
-}
-
-void BaseLinVelObservation::configure(const ObservationContext & context)
-{
-  mc_rtc::Configuration parameters =
-    context.convention.resolveObservationParameters(requestedType(), type(), config_.parameters);
-
-  sensorName_ = readParameter<std::string>(parameters, "sensor", std::string("Accelerometer"));
-
-  if(!context.observationRobot.hasBodySensor(sensorName_))
+  // R_0_x: orientation of the source frame in the world frame.
+  // sva rotations and BodySensor orientations both store R^T, hence the transposes.
+  Eigen::Matrix3d R_0_x;
+  Eigen::Vector3d valueLocal;
+  if(useSensor_)
   {
-    mc_rtc::log::error_and_throw(
-      "[Observation:{}] Body sensor '{}' does not exist on robot '{}'",
-      name(),
-      sensorName_,
-      context.observationRobot.name());
+    const auto & s = robot.bodySensor(sensorName_);
+    R_0_x = s.orientation().normalized().toRotationMatrix().transpose();
+    const Eigen::Vector3d raw = angular_ ? s.angularVelocity() : s.linearVelocity();
+    valueLocal = sensorIsWorld_ ? Eigen::Vector3d(R_0_x.transpose() * raw) : raw;
+  }
+  else
+  {
+    const auto idx = static_cast<size_t>(bodyIndex_);
+    R_0_x = robot.mbc().bodyPosW[idx].rotation().transpose();
+    const auto & velB = robot.mbc().bodyVelB[idx]; // ω and v of the body origin, body frame
+    valueLocal = angular_ ? velB.angular() : velB.linear();
   }
 
-  scale_ = readScale(parameters, "scale", 3, 1.0);
-}
+  Eigen::Vector3d value;
+  switch(frame_)
+  {
+    case Frame::Local:
+      value = valueLocal;
+      break;
+    case Frame::World:
+      value = R_0_x * valueLocal;
+      break;
+    case Frame::Heading:
+    {
+      const Eigen::Vector3d w = R_0_x * valueLocal;
+      const double yaw = std::atan2(R_0_x(1, 0), R_0_x(0, 0));
+      const double c = std::cos(yaw);
+      const double sn = std::sin(yaw);
+      value = Eigen::Vector3d(c * w.x() + sn * w.y(), -sn * w.x() + c * w.y(), w.z());
+      break;
+    }
+  }
 
-void BaseLinVelObservation::compute(const ObservationContext & context, Eigen::Ref<Eigen::VectorXd> out) const
-{
-  const auto & imu = context.observationRobot.bodySensor(sensorName_);
-  const Eigen::Vector3d value = imu.linearVelocity();
   out = value.cwiseProduct(scale_);
 }
 
@@ -380,15 +423,27 @@ void BaseOrientationObservation::configure(const ObservationContext & context)
   mc_rtc::Configuration parameters =
     context.convention.resolveObservationParameters(requestedType(), type(), config_.parameters);
 
-  sensorName_ = readParameter<std::string>(parameters, "sensor", std::string("Accelerometer"));
+  const std::string sensor = readParameter<std::string>(parameters, "sensor", std::string(""));
+  const std::string body = readParameter<std::string>(parameters, "body", std::string(""));
+  if(!sensor.empty() && !body.empty())
+    mc_rtc::log::error_and_throw("[Observation:{}] Choose either 'sensor' or 'body' as source, not both", name());
 
-  if(!context.observationRobot.hasBodySensor(sensorName_))
+  if(!body.empty())
   {
-    mc_rtc::log::error_and_throw(
-      "[Observation:{}] Body sensor '{}' does not exist on robot '{}'",
-      name(),
-      sensorName_,
-      context.observationRobot.name());
+    useSensor_ = false;
+    const std::string obs_body = body == "base" ? context.baseBody : body;
+    if(!context.observationRobot.hasBody(obs_body))
+      mc_rtc::log::error_and_throw("[Observation:{}] Body '{}' does not exist on robot '{}'", name(), obs_body,
+                                   context.observationRobot.name());
+    bodyIndex_ = static_cast<int>(context.observationRobot.mb().bodyIndexByName(obs_body));
+  }
+  else
+  {
+    useSensor_ = true;
+    sensorName_ = sensor.empty() ? std::string("Accelerometer") : sensor;
+    if(!context.observationRobot.hasBodySensor(sensorName_))
+      mc_rtc::log::error_and_throw("[Observation:{}] Body sensor '{}' does not exist on robot '{}'", name(),
+                                   sensorName_, context.observationRobot.name());
   }
 
   indexes_ = readParameter<std::vector<int>>(parameters, "index", {0,1,2});
@@ -398,9 +453,11 @@ void BaseOrientationObservation::configure(const ObservationContext & context)
 
 void BaseOrientationObservation::compute(const ObservationContext & context, Eigen::Ref<Eigen::VectorXd> out) const
 {
-  const auto & imu = context.observationRobot.bodySensor(sensorName_);
-
-  Eigen::Matrix3d baseRot = imu.orientation().toRotationMatrix().normalized();
+  // Both sources store R^T (sva / BodySensor convention), which is what rpyFromMat expects.
+  // Normalize the quaternion, not the matrix: Matrix::normalized() divides by the Frobenius norm.
+  const Eigen::Matrix3d baseRot =
+      useSensor_ ? context.observationRobot.bodySensor(sensorName_).orientation().normalized().toRotationMatrix()
+                 : context.observationRobot.mbc().bodyPosW[static_cast<size_t>(bodyIndex_)].rotation();
   const Eigen::Vector3d rpy = mc_rbdyn::rpyFromMat(baseRot);
   Eigen::VectorXd rpy_scaled = rpy.cwiseProduct(scale_);
 
