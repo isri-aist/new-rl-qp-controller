@@ -2,82 +2,82 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://isri-aist.github.io/new-rl-qp-controller/</loc>
-         <lastmod>2026-10-23</lastmod>
+         <lastmod>2026-10-24</lastmod>
     </url>
     <url>
          <loc>https://isri-aist.github.io/new-rl-qp-controller/troubleshooting/</loc>
-         <lastmod>2026-10-23</lastmod>
+         <lastmod>2026-10-24</lastmod>
     </url>
     <url>
          <loc>https://isri-aist.github.io/new-rl-qp-controller/reference/</loc>
-         <lastmod>2026-10-23</lastmod>
+         <lastmod>2026-10-24</lastmod>
     </url>
     <url>
          <loc>https://isri-aist.github.io/new-rl-qp-controller/reference/adaptation-advice/</loc>
-         <lastmod>2026-10-23</lastmod>
+         <lastmod>2026-10-24</lastmod>
     </url>
     <url>
          <loc>https://isri-aist.github.io/new-rl-qp-controller/reference/add-observation/</loc>
-         <lastmod>2026-10-23</lastmod>
+         <lastmod>2026-10-24</lastmod>
     </url>
     <url>
          <loc>https://isri-aist.github.io/new-rl-qp-controller/reference/architecture/</loc>
-         <lastmod>2026-10-23</lastmod>
+         <lastmod>2026-10-24</lastmod>
     </url>
     <url>
          <loc>https://isri-aist.github.io/new-rl-qp-controller/reference/controller-configuration/</loc>
-         <lastmod>2026-10-23</lastmod>
+         <lastmod>2026-10-24</lastmod>
     </url>
     <url>
          <loc>https://isri-aist.github.io/new-rl-qp-controller/reference/conventions/</loc>
-         <lastmod>2026-10-23</lastmod>
+         <lastmod>2026-10-24</lastmod>
     </url>
     <url>
          <loc>https://isri-aist.github.io/new-rl-qp-controller/reference/logging/</loc>
-         <lastmod>2026-10-23</lastmod>
+         <lastmod>2026-10-24</lastmod>
     </url>
     <url>
          <loc>https://isri-aist.github.io/new-rl-qp-controller/reference/observations/</loc>
-         <lastmod>2026-10-23</lastmod>
+         <lastmod>2026-10-24</lastmod>
     </url>
     <url>
          <loc>https://isri-aist.github.io/new-rl-qp-controller/reference/policy-options/</loc>
-         <lastmod>2026-10-23</lastmod>
+         <lastmod>2026-10-24</lastmod>
     </url>
     <url>
          <loc>https://isri-aist.github.io/new-rl-qp-controller/tutorial/</loc>
-         <lastmod>2026-10-23</lastmod>
+         <lastmod>2026-10-24</lastmod>
     </url>
     <url>
          <loc>https://isri-aist.github.io/new-rl-qp-controller/tutorial/01-fork-and-rename/</loc>
-         <lastmod>2026-10-23</lastmod>
+         <lastmod>2026-10-24</lastmod>
     </url>
     <url>
          <loc>https://isri-aist.github.io/new-rl-qp-controller/tutorial/02-controller-configuration/</loc>
-         <lastmod>2026-10-23</lastmod>
+         <lastmod>2026-10-24</lastmod>
     </url>
     <url>
          <loc>https://isri-aist.github.io/new-rl-qp-controller/tutorial/03-state-estimation/</loc>
-         <lastmod>2026-10-23</lastmod>
+         <lastmod>2026-10-24</lastmod>
     </url>
     <url>
          <loc>https://isri-aist.github.io/new-rl-qp-controller/tutorial/04-training-convention/</loc>
-         <lastmod>2026-10-23</lastmod>
+         <lastmod>2026-10-24</lastmod>
     </url>
     <url>
          <loc>https://isri-aist.github.io/new-rl-qp-controller/tutorial/05-policy-configuration/</loc>
-         <lastmod>2026-10-23</lastmod>
+         <lastmod>2026-10-24</lastmod>
     </url>
     <url>
          <loc>https://isri-aist.github.io/new-rl-qp-controller/tutorial/06-observations-configuration/</loc>
-         <lastmod>2026-10-23</lastmod>
+         <lastmod>2026-10-24</lastmod>
     </url>
     <url>
          <loc>https://isri-aist.github.io/new-rl-qp-controller/tutorial/07-running-and-validating/</loc>
-         <lastmod>2026-10-23</lastmod>
+         <lastmod>2026-10-24</lastmod>
     </url>
     <url>
          <loc>https://isri-aist.github.io/new-rl-qp-controller/tutorial/08-next-steps/</loc>
-         <lastmod>2026-10-23</lastmod>
+         <lastmod>2026-10-24</lastmod>
     </url>
 </urlset>
