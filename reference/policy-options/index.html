@@ -871,6 +871,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#onnx-metadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ONNX metadata
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#validation-failures" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1118,6 +1129,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#onnx-metadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ONNX metadata
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#validation-failures" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1165,7 +1187,11 @@
 <p>This page documents fields read by the policy parser. See <a href="../../tutorial/05-policy-configuration/">the tutorial</a> or the <a href="https://github.com/isri-aist/new-rl-qp-controller/tree/main/policies/fullExample/policy.yaml">fullExample</a> of the template for a complete example.</p>
 <p><code>policy.yaml</code> lives alongside <code>observations.yaml</code> and an ONNX file in its own folder under <code>policies_root</code>.</p>
 <h2 id="minimal-example">Minimal example<a class="headerlink" href="#minimal-example" title="Permanent link">&para;</a></h2>
-<p>Only <code>action.joints</code> and <code>control.kp</code>/<code>control.kd</code> are strictly required; everything else falls back to a default:</p>
+<p>If the ONNX file carries training metadata (see <a href="#onnx-metadata">ONNX metadata</a>), this is enough:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
+<span class="nt">control</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
+</code></pre></div>
+<p>Without metadata, <code>control.kp</code>/<code>control.kd</code> are required and <code>action.joints</code> needs a joint group from a convention; everything else falls back to a default:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">action</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">joints</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">all</span>
 
@@ -1227,6 +1253,12 @@
 <td><code>&lt;name&gt;.onnx</code></td>
 <td>ONNX filename.</td>
 </tr>
+<tr>
+<td><code>use_onnx_metadata</code></td>
+<td style="text-align: right;">No</td>
+<td><code>true</code></td>
+<td>Read the training data stored in the ONNX file, see <a href="#onnx-metadata">ONNX metadata</a>.</td>
+</tr>
 </tbody>
 </table>
 <h2 id="action"><code>action</code><a class="headerlink" href="#action" title="Permanent link">&para;</a></h2>
@@ -1242,9 +1274,9 @@
 <tbody>
 <tr>
 <td><code>joints</code></td>
-<td style="text-align: right;">Yes</td>
-<td>—</td>
-<td>Name of a <code>conventions.yaml</code> joint group, defining ONNX output order and size. Unlike observations' <code>joints</code> parameter (see <a href="../observations/#common-parameters">Available observations</a>), this must be a named group — there's no inline-list alternative, so a convention is always required for this field. See <a href="../conventions/#is-a-convention-required">Training conventions §Is a convention required?</a>.</td>
+<td style="text-align: right;">No</td>
+<td><code>all</code></td>
+<td>Name of a joint group, defining ONNX output order and size. The <code>all</code> group comes from the convention or from the ONNX metadata. Unlike observations' <code>joints</code> parameter (see <a href="../observations/#common-parameters">Available observations</a>), this must be a named group. See <a href="../conventions/#is-a-convention-required">Training conventions §Is a convention required?</a>.</td>
 </tr>
 <tr>
 <td><code>controlled_joints</code></td>
@@ -1255,14 +1287,14 @@
 <tr>
 <td><code>scale</code></td>
 <td style="text-align: right;">No</td>
-<td><code>1.0</code></td>
-<td>Action scale accepted by the runtime.</td>
+<td>ONNX metadata, then <code>1.0</code></td>
+<td>Scalar or per-joint map. The ONNX value wins for the joints it covers.</td>
 </tr>
 <tr>
 <td><code>q0</code></td>
 <td style="text-align: right;">No</td>
-<td>controller/default posture</td>
-<td>Full default-pose map when provided.</td>
+<td>ONNX metadata, then posture task</td>
+<td>Per-joint map. The ONNX value wins for the joints it covers; joints with no value use the posture task.</td>
 </tr>
 </tbody>
 </table>
@@ -1309,27 +1341,78 @@
 </tr>
 <tr>
 <td><code>kp</code></td>
-<td style="text-align: right;">Yes</td>
-<td>—</td>
-<td>Base stiffness map.</td>
+<td style="text-align: right;">Without metadata</td>
+<td>ONNX metadata</td>
+<td>Base stiffness map. The <code>policy.yaml</code> value wins. Every controller joint needs a value from one of the two.</td>
 </tr>
 <tr>
 <td><code>kd</code></td>
-<td style="text-align: right;">Yes</td>
-<td>—</td>
-<td>Base damping map.</td>
+<td style="text-align: right;">Without metadata</td>
+<td>ONNX metadata</td>
+<td>Base damping map. Same rules as <code>kp</code>.</td>
 </tr>
 </tbody>
 </table>
+<p>Every key of the <code>kp</code>, <code>kd</code>, <code>scale</code> and <code>q0</code> maps must be a controller joint: a misspelled name stops loading.</p>
 <p>Specify only one of <code>period_s</code> and <code>frequency_hz</code>.</p>
+<h2 id="onnx-metadata">ONNX metadata<a class="headerlink" href="#onnx-metadata" title="Permanent link">&para;</a></h2>
+<p>Some exporters (mjlab, for example) store training data in the ONNX file as metadata. When present, it is read at startup for every policy and used as follows:</p>
+<table>
+<thead>
+<tr>
+<th>Metadata key</th>
+<th>Used for</th>
+<th>If <code>policy.yaml</code> also sets it</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>joint_names</code></td>
+<td>the <code>all</code> joint group: action and observation joint order</td>
+<td>the convention's <code>all</code> group must be identical, otherwise loading fails</td>
+</tr>
+<tr>
+<td><code>default_joint_pos</code></td>
+<td><code>action.q0</code></td>
+<td><strong>ONNX wins</strong>, warning on differences</td>
+</tr>
+<tr>
+<td><code>action_scale</code></td>
+<td><code>action.scale</code></td>
+<td><strong>ONNX wins</strong>, warning on differences</td>
+</tr>
+<tr>
+<td><code>joint_stiffness</code></td>
+<td><code>control.kp</code></td>
+<td><strong><code>policy.yaml</code> wins</strong>, warning on differences</td>
+</tr>
+<tr>
+<td><code>joint_damping</code></td>
+<td><code>control.kd</code></td>
+<td><strong><code>policy.yaml</code> wins</strong>, warning on differences</td>
+</tr>
+<tr>
+<td><code>observation_names</code></td>
+<td>cross-check of the <code>observations.yaml</code> order</td>
+<td>warning only</td>
+</tr>
+</tbody>
+</table>
+<p>To see what a file contains, run <code>python3 scripts/inspect_policy.py &lt;model.onnx&gt;</code>: it lists these keys, the joint order with its per-joint values, and the observation terms.</p>
+<p>Differences smaller than rounding (1e-3 + 1% of the ONNX value) are ignored. Joints missing from the metadata (for example joints the policy does not control) still need <code>policy.yaml</code> values. </p>
+<p>You can set <code>use_onnx_metadata: false</code> to ignore the metadata entirely if needed.</p>
 <h2 id="validation-failures">Validation failures<a class="headerlink" href="#validation-failures" title="Permanent link">&para;</a></h2>
 <p>Loading fails for :</p>
 <ul>
 <li>unresolved paths/names</li>
-<li>missing or empty <code>action.joints</code></li>
+<li>an unknown joint group in <code>action.joints</code> (no silent fallback to the controller order), including <code>all</code> when neither the ONNX metadata nor the convention provides it</li>
+<li>an <code>action.joints</code> that is not a group name, such as an inline list</li>
+<li>a convention <code>all</code> group that differs from the ONNX <code>joint_names</code></li>
+<li>a joint in the ONNX <code>joint_names</code> that the robot does not have</li>
+<li>a <code>kp</code>/<code>kd</code>/<code>scale</code>/<code>q0</code> key that is not a controller joint</li>
 <li>simultaneous period and frequency</li>
 <li>non-positive timing or gain ratio</li>
-<li>incomplete gain or provided <code>q0</code> maps</li>
+<li>a controller joint with no <code>kp</code> or <code>kd</code>, in <code>policy.yaml</code> nor in the ONNX metadata</li>
 <li>invalid controlled subset</li>
 <li>ONNX output mismatch.</li>
 </ul>
@@ -1353,7 +1436,7 @@
   
     <span class="controller-page-date">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
-      <strong>Last updated:</strong> <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 23, 2026 08:46:57 UTC">October 23, 2026</span>
+      <strong>Last updated:</strong> <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 27, 2026 10:49:56 UTC">October 27, 2026</span>
     </span> -->
   
 

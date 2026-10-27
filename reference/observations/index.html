@@ -1614,8 +1614,8 @@
 </thead>
 <tbody>
 <tr>
-<td><code>body: &lt;name&gt;</code> (default <code>robot.base_body</code>)</td>
-<td>ω and v of the body origin from the observed robot, written by whichever floating-base observer runs</td>
+<td><code>body: &lt;frame&gt;</code> (default <code>robot.base_body</code>)</td>
+<td>ω and v of the frame origin from the observed robot, written by whichever floating-base observer runs. Any mc_rtc robot frame works: a body, or a frame or surface from the robot module</td>
 <td>real robot and simulation</td>
 </tr>
 <tr>
@@ -1643,22 +1643,30 @@
 <tbody>
 <tr>
 <td><code>local</code> (default)</td>
-<td>frame of the source body or sensor; what most locomotion policies use</td>
+<td>absolute velocity, in the axes of the source frame or sensor; what most locomotion policies use</td>
 </tr>
 <tr>
 <td><code>world</code></td>
-<td>world frame</td>
+<td>absolute velocity, in world axes</td>
 </tr>
 <tr>
-<td><code>heading</code></td>
-<td>world frame rotated by the source yaw only: x forward and y left in the horizontal plane, z vertical</td>
+<td><code>&lt;frame&gt;</code></td>
+<td>velocity relative to any frame of the observed robot, in its axes; for example the hand velocity relative to the shoulder</td>
 </tr>
 </tbody>
 </table>
-<p>The <code>world</code> and <code>heading</code> outputs need the source orientation. With <code>body</code>, it comes from the observer. With <code>sensor</code>, it comes from the sensor orientation, which the simulator, the IMU, or an observer (Tilt with <code>updateSensor</code>) must fill.</p>
+<div class="highlight"><pre><span></span><code><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">base_lin_vel</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">body</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">r_hand</span><span class="w">        </span><span class="c1"># whose velocity</span>
+<span class="w">    </span><span class="nt">frame</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">r_shoulder</span><span class="w">   </span><span class="c1"># relative to which frame</span>
+</code></pre></div>
 <div class="admonition warning">
 <p class="admonition-title">IMU mounting</p>
-<p>With <code>sensor: &lt;IMU&gt;</code> and <code>frame: local</code>, ω is in the IMU frame. It equals the base frame only if the IMU is mounted without rotation on the base link.</p>
+<p>With <code>sensor: &lt;IMU&gt;</code> and <code>frame: local</code>, ω is in the IMU axes. It equals the base axes only if the IMU is mounted without rotation on the base link. <code>frame: &lt;base body&gt;</code> does not fix this: it gives ω relative to the base, which is close to zero for an IMU on the base link.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Simulator and mc_rtc axis conventions</p>
+<p><code>frame</code> cannot currently re-express a sensor's data in other axes. If a simulator and mc_rtc disagree on a sensor's axes, the data must be corrected before it reaches the observation, or a <code>body</code> source used instead.</p>
 </div>
 <h3 id="last_action"><code>last_action</code><a class="headerlink" href="#last_action" title="Permanent link">&para;</a></h3>
 <p>The previous raw ONNX action, reordered for the selected joint set.</p>
@@ -1843,7 +1851,7 @@ force_sensor
   
     <span class="controller-page-date">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
-      <strong>Last updated:</strong> <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 27, 2026 08:17:06 UTC">October 27, 2026</span>
+      <strong>Last updated:</strong> <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 27, 2026 09:20:02 UTC">October 27, 2026</span>
     </span> -->
   
 

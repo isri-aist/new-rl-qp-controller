@@ -518,6 +518,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#check-what-the-onnx-file-already-provides" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Check what the ONNX file already provides
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#where-the-joint-order-comes-from" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1063,6 +1074,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#check-what-the-onnx-file-already-provides" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Check what the ONNX file already provides
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#where-the-joint-order-comes-from" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1151,8 +1173,13 @@
 <p>For the full semantics of this file, see the <a href="../../reference/conventions/">Training conventions reference</a> — this page is the concrete fill-in for the <code>unitree_rl_mjlab</code> G1 policy.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
-<p>An <code>all</code> entry containing all joints in the order used by the policy is <strong>necessary</strong>. This is needed to handle the policy appropriately. The rest of the options are completely optional.</p>
+<p>The controller needs the policy's joint order as the <code>all</code> group. If the ONNX file stores <code>joint_names</code> in its metadata (mjlab exports do), <code>all</code> comes from there and this file is optional. Otherwise, an <code>all</code> entry with every joint in the order used by the policy is <strong>necessary</strong>. The rest of the options are always optional.</p>
 </div>
+<h2 id="check-what-the-onnx-file-already-provides">Check what the ONNX file already provides<a class="headerlink" href="#check-what-the-onnx-file-already-provides" title="Permanent link">&para;</a></h2>
+<p>If you have any doubts on the policy's metadata, the inspection script can be ran on the exported model, wherever it currently is (it is copied into <code>policies/unitree/</code> in the next step):</p>
+<div class="highlight"><pre><span></span><code>python3<span class="w"> </span>scripts/inspect_policy.py<span class="w"> </span>path/to/policy.onnx
+</code></pre></div>
+<p>It needs the <code>onnxruntime</code> Python package (<code>pip install onnxruntime</code>). If its <code>Metadata</code> section lists <code>joint_names</code>, the joint order below is already in the file, and the <code>all</code> group is optional. The <code>unitree_rl_mjlab</code> export does provide it: the convention below is kept as the example for policies whose exporter doesn't. <a href="../07-running-and-validating/#metadata">Inspect the policy</a> describes the rest of its output.</p>
 <h2 id="where-the-joint-order-comes-from">Where the joint order comes from<a class="headerlink" href="#where-the-joint-order-comes-from" title="Permanent link">&para;</a></h2>
 <p>The convention's <code>joint_groups.all</code> must list every actuated joint in <strong>exactly the order the ONNX model was trained and exported with</strong>. For a policy trained with <code>unitree_rl_mjlab</code>, that order is published alongside the exported model, in the policy's <code>deploy.yaml</code> (see <a href="../05-policy-configuration/">Configure the policy</a> for more on that file) as <code>joint_ids_map: [0, 1, 2, ..., 28]</code> — an identity mapping, meaning the deployment order <em>is</em> the training order, with no reindexing needed. The 29 joint names themselves come from the G1's own URDF/robot description, in the same order used throughout <code>unitree_rl_mjlab</code>'s G1 task configuration.</p>
 <h2 id="the-convention">The convention<a class="headerlink" href="#the-convention" title="Permanent link">&para;</a></h2>
@@ -1240,7 +1267,7 @@
   
     <span class="controller-page-date">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
-      <strong>Last updated:</strong> <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 23, 2026 08:46:57 UTC">October 23, 2026</span>
+      <strong>Last updated:</strong> <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 27, 2026 10:49:56 UTC">October 27, 2026</span>
     </span> -->
   
 

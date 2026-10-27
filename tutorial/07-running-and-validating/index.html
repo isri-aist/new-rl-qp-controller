@@ -602,13 +602,41 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#optional-check-the-dimensions" class="md-nav__link">
+  <a href="#optional-inspect-the-policy" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Optional - Check the dimensions
+        Optional - Inspect the policy
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Optional - Inspect the policy">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dimensions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dimensions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Metadata
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1091,13 +1119,41 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#optional-check-the-dimensions" class="md-nav__link">
+  <a href="#optional-inspect-the-policy" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Optional - Check the dimensions
+        Optional - Inspect the policy
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Optional - Inspect the policy">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dimensions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dimensions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Metadata
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1206,11 +1262,12 @@
 <p class="admonition-title">Cleaning up the template's placeholder policies</p>
 <p><code>policies/minimalExample/</code> and <code>policies/fullExample/</code> were the template's placeholder policies (zero-byte ONNX files, generic joint names). They're not needed anymore now that <code>policies/unitree/</code> is a real policy — you can remove them, or keep them around as a reference for the file format. The <code>g1_rl_qp_controller</code> repository removes them.</p>
 </div>
-<h2 id="optional-check-the-dimensions">Optional - Check the dimensions<a class="headerlink" href="#optional-check-the-dimensions" title="Permanent link">&para;</a></h2>
-<p>Before building, or in case of dimension mismatch error, verify the ONNX model's input/output sizes match what was just configured. The template ships a helper for this:</p>
+<h2 id="optional-inspect-the-policy">Optional - Inspect the policy<a class="headerlink" href="#optional-inspect-the-policy" title="Permanent link">&para;</a></h2>
+<p>Before building, or in case of a dimension mismatch error, check the ONNX model against what was just configured. The template ships a helper that prints the input/output sizes and the training metadata stored in the file:</p>
 <div class="highlight"><pre><span></span><code>python3<span class="w"> </span>scripts/inspect_policy.py<span class="w"> </span>policies/unitree/policy.onnx
 </code></pre></div>
-<p>The script imports the <code>onnxruntime</code> Python package, which is separate from the C++ ONNX Runtime bundled with the template: install it with <code>pip install onnxruntime</code> if it isn't already available in your Python environment.</p>
+<p>The script imports the <code>onnxruntime</code> Python package, which is separate from the C++ ONNX Runtime bundled with the template: install it with <code>pip install onnxruntime</code> if it isn't already available in your Python environment. Add <code>--raw</code> to print long metadata values in full.</p>
+<h3 id="dimensions">Dimensions<a class="headerlink" href="#dimensions" title="Permanent link">&para;</a></h3>
 <p>You're checking it against the sizes implied by the previous two steps:</p>
 <table>
 <thead>
@@ -1270,6 +1327,15 @@
 </table>
 <p><code>inspect_policy.py</code>'s reported input and output shapes should read <code>98</code> and <code>29</code>. If they don't, work back through <a href="../06-observations-configuration/">Configure the observations</a> and <a href="../05-policy-configuration/">Configure the policy</a> — a mismatch here almost always means a term was skipped, an <code>all</code> group doesn't actually have 29 entries, or a <code>history</code> value doesn't match what's expected.</p>
 <p>The runtime performs this same check itself when loading and before every inference — see <a href="../../troubleshooting/#onnx-input-size-mismatch">Troubleshooting: ONNX input/action size mismatch</a> if it fails at that point instead.</p>
+<h3 id="metadata">Metadata<a class="headerlink" href="#metadata" title="Permanent link">&para;</a></h3>
+<p>The <code>Metadata</code> section shows the training data the exporter stored in the file, as the controller will use it (see <a href="../../reference/policy-options/#onnx-metadata">ONNX metadata</a>):</p>
+<ul>
+<li><strong>Used by the controller</strong>: each key the controller reads, and whether it is present, usable, or ignored (for example a list whose length doesn't match <code>joint_names</code>).</li>
+<li><strong>Joint order</strong>: the <code>all</code> group, with the per-joint kp, kd, q0 and action scale. Compare it with the <code>all</code> group of your convention, if you defined one: the controller refuses to load if they differ.</li>
+<li><strong>Observation terms</strong>: the input order. It should match the <code>observations.yaml</code> list entry for entry.</li>
+<li><strong>Other keys</strong>: everything else the exporter stored, for information.</li>
+</ul>
+<p>For the <code>unitree</code> policy, the 29 joints and the 7 terms <code>base_ang_vel, projected_gravity, command, phase, joint_pos, joint_vel, actions</code> are reported. <code>actions</code> is the <code>last_action</code> entry, which is why that entry sets <code>name: actions</code>. If the file has no metadata, the section says so: <code>policy.yaml</code> must then give every gain, and the convention the <code>all</code> group.</p>
 <h2 id="build">Build<a class="headerlink" href="#build" title="Permanent link">&para;</a></h2>
 <h3 id="option-1-with-the-superbuild">Option 1 - with the superbuild<a class="headerlink" href="#option-1-with-the-superbuild" title="Permanent link">&para;</a></h3>
 <p>Register the controller in the <a href="../#setting-up-the-environment">superbuild</a> with an extension file, then rebuild. Following the <a href="https://github.com/safe-rl-qp/safe-rl-qp-mc-rtc-superbuild#add-your-controller-to-the-superbuild">superbuild README</a>:</p>
@@ -1325,7 +1391,7 @@ sudo<span class="w"> </span>cmake<span class="w"> </span>--install<span class="w
   
     <span class="controller-page-date">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
-      <strong>Last updated:</strong> <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 23, 2026 08:46:57 UTC">October 23, 2026</span>
+      <strong>Last updated:</strong> <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 27, 2026 10:49:56 UTC">October 27, 2026</span>
     </span> -->
   
 
