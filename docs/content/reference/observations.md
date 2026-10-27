@@ -13,6 +13,7 @@ Each entry in `observations.yaml` becomes an `ObservationConfig`, an `Observatio
 ```yaml
 training_convention: mjlab
 history_order_newest_first: false
+history: 1                    # optional, policy-wide default
 observation_source: realRobot # optional, policy-wide default
 
 observations:
@@ -25,6 +26,8 @@ observations:
 ```
 
 The final policy input is concatenated in the same order as the YAML list. For every term, its history samples are concatenated according to `history_order_newest_first`.
+
+The top-level `history` sets the history length of every term in the policy. A term overrides it with `history` in its `parameters`. Without either, the length is `1`.
 
 ## Observation source
 
@@ -52,7 +55,7 @@ When an entry overrides the policy default, it is logged at policy load.
 
 | Parameter | Meaning |
 |---|---|
-| `history` | Number of stored samples for this term. Must be positive. Default: `1`. |
+| `history` | Number of stored samples for this term. Must be positive. Overrides the top-level `history`, which defaults to `1`. |
 | `observation_source` | `realRobot` or `robot`. Overrides the policy-wide value, see [Observation source](#observation-source). |
 | `name` | Optional unique/debug label. Defaults to the requested YAML type. |
 | `scale` | Scalar or vector multiplier. A vector must match the observation size. |

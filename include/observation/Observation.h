@@ -122,7 +122,12 @@ struct ObservationConfig
    */
   std::string name;
 
-  /** @brief Number of samples stored by ObservationManager for this observation. */
+  /**
+   * @brief Number of samples stored by ObservationManager for this observation.
+   *
+   * Resolved by ObservationManager: parameters.history of the entry, else the
+   * top-level history of observations.yaml, else 1.
+   */
   int history = 1;
 
   /**

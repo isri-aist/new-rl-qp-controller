@@ -40,13 +40,18 @@ void ObservationManager::load(const mc_rtc::Configuration & observationsConfig,
 
   mc_rtc::Configuration observations = observationsConfig("observations");
 
+  // Policy-wide defaults, overridden by each entry's parameters
+  ObservationConfig defaults;
+  defaults.history = observationsConfig("history", 1);
+  if(defaults.history <= 0)
+    mc_rtc::log::error_and_throw("[ObservationManager] observations.yaml has invalid history {}", defaults.history);
   defaultSource_ = observationsConfig("observation_source", std::string("realRobot"));
-  const bool defaultUseRealRobot = parseObservationSource(defaultSource_, "observations.yaml");
+  defaults.useRealRobot = parseObservationSource(defaultSource_, "observations.yaml");
 
   Entry entry;
   for(size_t i = 0; i < observations.size(); ++i)
   {
-    ObservationConfig config = parseObservationConfig(observations[i], defaultUseRealRobot);
+    ObservationConfig config = parseObservationConfig(observations[i], defaults);
     config.type = convention_.resolveType(config.requestedType);
 
     entry.observation = registry.create(config, convention_);
@@ -111,9 +116,9 @@ Eigen::VectorXd ObservationManager::compute(const ObservationContext & context)
 }
 
 ObservationConfig ObservationManager::parseObservationConfig(const mc_rtc::Configuration & config,
-                                                             bool defaultUseRealRobot) const
+                                                             const ObservationConfig & defaults) const
 {
-  ObservationConfig out;
+  ObservationConfig out = defaults;
 
   out.requestedType = config("type", std::string(""));
 
@@ -126,18 +131,13 @@ ObservationConfig ObservationManager::parseObservationConfig(const mc_rtc::Confi
   out.name = out.requestedType;
   config("name", out.name);
 
-  out.history = config("parameters")("history", 1);
-
-  if(out.history <= 0)
-  {
-    mc_rtc::log::error_and_throw("[ObservationManager] Observation '{}' has invalid history {}", out.name, out.history);
-  }
-
-  out.useRealRobot = defaultUseRealRobot;
-
   if(config.has("parameters"))
   {
     out.parameters = config("parameters");
+    out.parameters("history", out.history);
+    if(out.history <= 0)
+      mc_rtc::log::error_and_throw("[ObservationManager] Observation '{}' has invalid history {}", out.name,
+                                   out.history);
     if(out.parameters.has("observation_source"))
       out.useRealRobot = parseObservationSource(out.parameters("observation_source").operator std::string(),
                                                 "observation '" + out.name + "'");

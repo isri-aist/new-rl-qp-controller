@@ -77,7 +77,7 @@ public:
 private:
   /** @brief parse observations.yaml. Handles entries history here and leave observation-specific to respective
    * Observation class */
-  ObservationConfig parseObservationConfig(const mc_rtc::Configuration & config, bool defaultUseRealRobot) const;
+  ObservationConfig parseObservationConfig(const mc_rtc::Configuration & config, const ObservationConfig & defaults) const;
   Eigen::VectorXd flattenHistory(const Entry & entry) const;
 
   std::vector<Entry> entries_;
