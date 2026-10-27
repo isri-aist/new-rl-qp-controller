@@ -13,6 +13,7 @@ Each entry in `observations.yaml` becomes an `ObservationConfig`, an `Observatio
 ```yaml
 training_convention: mjlab
 history_order_newest_first: false
+observation_source: realRobot # optional, policy-wide default
 
 observations:
   - type: joint_pos
@@ -25,6 +26,25 @@ observations:
 
 The final policy input is concatenated in the same order as the YAML list. For every term, its history samples are concatenated according to `history_order_newest_first`.
 
+## Observation source
+
+Each observation reads either `realRobot` (measured state: encoders, sensors, observer estimates) or `robot` (control robot state). It is resolved in this order:
+
+1. `observation_source` in the observation's `parameters`;
+2. the top-level `observation_source` of `observations.yaml`, for the whole policy;
+3. `realRobot`.
+
+```yaml
+observation_source: realRobot
+observations:
+  - type: joint_pos
+  - type: base_lin_vel
+    parameters:
+      observation_source: robot   # this term only
+```
+
+When an entry overrides the policy default, it is logged at policy load.
+
 !!! warning "History order must reproduce training"
     `history_order_newest_first: true` concatenates the latest sample first. `false` places the oldest stored sample first. A correct dimension with the wrong temporal order can still produce completely invalid policy behavior.
 
@@ -33,6 +53,7 @@ The final policy input is concatenated in the same order as the YAML list. For e
 | Parameter | Meaning |
 |---|---|
 | `history` | Number of stored samples for this term. Must be positive. Default: `1`. |
+| `observation_source` | `realRobot` or `robot`. Overrides the policy-wide value, see [Observation source](#observation-source). |
 | `name` | Optional unique/debug label. Defaults to the requested YAML type. |
 | `scale` | Scalar or vector multiplier. A vector must match the observation size. |
 | `joints` | A named `conventions.yaml` joint group, or an explicit inline list of joint names — the group is resolved first, falling back to the list. Using a convention group here is a convenience, not a requirement; see [Training conventions: is a convention required?](conventions.md#is-a-convention-required). |

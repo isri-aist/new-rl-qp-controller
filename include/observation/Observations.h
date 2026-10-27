@@ -106,9 +106,10 @@ struct VelocitySource
 
   void configure(const std::string & obsName,
                  const mc_rtc::Configuration & parameters,
-                 const ObservationContext & context,
+                 const mc_rbdyn::Robot & robot,
+                 const std::string & baseBody,
                  bool angular);
-  Eigen::Vector3d read(const ObservationContext & context, bool angular) const;
+  Eigen::Vector3d read(const mc_rbdyn::Robot & robot, bool angular) const;
 };
 
 /** @brief Angular velocity ω of the base, or of any body (see VelocitySource for parameters). */

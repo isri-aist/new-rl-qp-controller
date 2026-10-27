@@ -17,13 +17,11 @@ Standard mc_rtc settings (FSM states, transitions, etc.) can be added or modifie
 ```yaml
 robot:
   base_body: pelvis
-  observation_source: realRobot
 ```
 
 | Key | Options | Meaning |
 |---|---|---|
 | `base_body` | robot body name | Default body used by floating-base observations. Should exist on your observation robot. |
-| `observation_source` | `realRobot` or `robot` | Which robot state is used to compute observations. Use `realRobot` for measured hardware state; use `robot` only when the control robot is intentionally the source. |
 
 ### 2. Point to the policy directory
 
@@ -69,7 +67,7 @@ One example of this would be the addition of a stationary state, from which to s
 
 - [ ] `base_body` exists on the selected observation robot.
 - [ ] `policies_root` directory exists.
-- [ ] `observation_source` provides complete encoders and every signal required by the `observations.yaml` of the default policy.
+- [ ] The robot read by each observation (`observation_source` in `observations.yaml`, default `realRobot`) provides complete encoders and every signal it needs.
 - [ ] `default_policy` matches a loaded policy name.
 - [ ] The configured initial FSM state is compiled and exported.
 

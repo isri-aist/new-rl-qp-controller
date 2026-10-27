@@ -11,14 +11,13 @@ This step edits `etc/G1RLQPController.in.yaml`, the usual mc_rtc controller conf
 ```yaml
 robot:
   base_body: pelvis
-  observation_source: realRobot
 ```
 
 This is not native to mc_rtc but specific to this controller :
 
 - `base_body` is the default body used by floating-base observations (example : see [`projected_gravity`](../reference/observations.md#projected_gravity)) when they aren't given an explicit body or sensor. For G1's mc_rtc robot module, that's `pelvis`. The template's placeholder was `base_link` — check what your own robot module actually calls its floating-base body (`robot().mb().body(0).name()` or the module's documentation).
 
-- `observation_source: realRobot` is the correct default for hardware deployment: observations are computed from measured state, not the control robot's target state. It is left unchanged here.
+- Observations read `realRobot` (measured state) by default, which is what hardware deployment needs. To change it, set `observation_source` per policy in `observations.yaml`, see [Observation source](../reference/observations.md#observation-source).
 
 ## Observer pipeline
 
@@ -94,8 +93,6 @@ robots:
 
 robot:
   base_body: pelvis
-  # realRobot is usually appropriate on hardware; robot can be useful in simulation.
-  observation_source: realRobot
 
 collisions:
   - type: collision

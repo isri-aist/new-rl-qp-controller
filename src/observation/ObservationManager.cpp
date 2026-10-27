@@ -13,6 +13,14 @@ mc_rtc::Configuration emptyConfiguration()
   return mc_rtc::Configuration();
 }
 
+bool parseObservationSource(const std::string & source, const std::string & where)
+{
+  if(source != "realRobot" && source != "robot")
+    mc_rtc::log::error_and_throw("[ObservationManager] Invalid observation_source '{}' in {}. Expected 'realRobot' or 'robot'",
+                                 source, where);
+  return source == "realRobot";
+}
+
 } // namespace
 
 ObservationManager::ObservationManager() {}
@@ -32,10 +40,13 @@ void ObservationManager::load(const mc_rtc::Configuration & observationsConfig,
 
   mc_rtc::Configuration observations = observationsConfig("observations");
 
+  defaultSource_ = observationsConfig("observation_source", std::string("realRobot"));
+  const bool defaultUseRealRobot = parseObservationSource(defaultSource_, "observations.yaml");
+
   Entry entry;
   for(size_t i = 0; i < observations.size(); ++i)
   {
-    ObservationConfig config = parseObservationConfig(observations[i]);
+    ObservationConfig config = parseObservationConfig(observations[i], defaultUseRealRobot);
     config.type = convention_.resolveType(config.requestedType);
 
     entry.observation = registry.create(config, convention_);
@@ -99,7 +110,8 @@ Eigen::VectorXd ObservationManager::compute(const ObservationContext & context)
   return out;
 }
 
-ObservationConfig ObservationManager::parseObservationConfig(const mc_rtc::Configuration & config) const
+ObservationConfig ObservationManager::parseObservationConfig(const mc_rtc::Configuration & config,
+                                                             bool defaultUseRealRobot) const
 {
   ObservationConfig out;
 
@@ -121,9 +133,14 @@ ObservationConfig ObservationManager::parseObservationConfig(const mc_rtc::Confi
     mc_rtc::log::error_and_throw("[ObservationManager] Observation '{}' has invalid history {}", out.name, out.history);
   }
 
+  out.useRealRobot = defaultUseRealRobot;
+
   if(config.has("parameters"))
   {
     out.parameters = config("parameters");
+    if(out.parameters.has("observation_source"))
+      out.useRealRobot = parseObservationSource(out.parameters("observation_source").operator std::string(),
+                                                "observation '" + out.name + "'");
   }
   else
   {

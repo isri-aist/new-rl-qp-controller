@@ -27,11 +27,11 @@ void RLPolicyRuntime::configure(const mc_rtc::Configuration & controllerConfig,
   if(controllerConfig_.has("robot"))
   {
     baseBody_ = controllerConfig_("robot")("base_body", std::string("base_link"));
-    observationSource_ = controllerConfig_("robot")("observation_source", std::string("realRobot"));
+    if(controllerConfig_("robot").has("observation_source"))
+      mc_rtc::log::error_and_throw("[RLPolicyRuntime] robot.observation_source is no longer read from the controller "
+                                   "configuration. Remove it and set observation_source in observations.yaml "
+                                   "(policy-wide) or in an observation's parameters. Default: realRobot");
   }
-
-  if(observationSource_ != "realRobot" && observationSource_ != "robot")
-    mc_rtc::log::error_and_throw("[RLPolicyRuntime] Invalid robot.observation_source '{}'. Expected 'realRobot' or 'robot'.", observationSource_);
 
   const int nbActuatedJoints = static_cast<int>(controllerJointOrder_.size());
 
@@ -356,6 +356,13 @@ void RLPolicyRuntime::configureObservations(const PolicyConfig & policy,
 {
   observationManager_.load(policy.observationsConfiguration, controllerConfig_, observationRegistry_);
   observationManager_.configure(makeObservationContext(ctl));
+  for(const auto & entry : observationManager_.entries())
+  {
+    if(entry.observation->observationSource() != observationManager_.defaultSource())
+      mc_rtc::log::info("[RLPolicyRuntime:{}] Observation '{}' reads '{}' (policy default: '{}')", policy.name,
+                        entry.observation->name(), entry.observation->observationSource(),
+                        observationManager_.defaultSource());
+  }
   currentObservation_ = Eigen::VectorXd::Zero(policy_->getObservationSize());
 }
 
@@ -392,7 +399,8 @@ void RLPolicyRuntime::validateObservationAgainstNetwork() const
 ObservationContext RLPolicyRuntime::makeObservationContext(NewRLQPController & ctl)
 {
   return ObservationContext{
-    selectedObservationRobot(ctl),
+    ctl.realRobot(robotName_),
+    ctl.robot(),
     baseBody_,
     controllerJointOrder_,
     actionToControllerMap_,
@@ -401,13 +409,6 @@ ObservationContext RLPolicyRuntime::makeObservationContext(NewRLQPController & c
     command_,
     phaseNormalized_,
     activeConvention_};
-}
-
-mc_rbdyn::Robot & RLPolicyRuntime::selectedObservationRobot(NewRLQPController & ctl)
-{
-  if(observationSource_ == "robot")
-    return ctl.robot();
-  return ctl.realRobot(robotName_);
 }
 
 

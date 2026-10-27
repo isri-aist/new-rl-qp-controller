@@ -7,6 +7,10 @@ training_convention: trainingConvention1
 # Optional. Defines the order in which to handle all observations history. Defaults to true.
 history_order_newest_first: true
 
+# Optional. Robot read by all observations: realRobot (measured state) or robot (control state).
+# Defaults to realRobot. Each observation can override it in its parameters.
+observation_source: realRobot
+
 observations:
   - type: joint_pos
     # Optional debug/log label. Defaults to type.
@@ -14,6 +18,8 @@ observations:
     parameters:
       # Optional. Defaults to 1 and must be positive.
       history: 1
+      # Optional. Overrides the top-level observation_source for this observation.
+      observation_source: realRobot
       # Optional. May be a named group or an explicit list of joint names.
       joints: all # OR joints: [jointName1, jointName2, jointName3]
       # Optional. Defaults to true.

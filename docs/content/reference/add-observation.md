@@ -35,7 +35,7 @@ Add the implementation to `src/observation/Observations.cpp`.
 
 Use:
 
-- `context.observationRobot` for the selected robot state;
+- `observedRobot(context)` for the robot selected by the entry's `observation_source` (do not read `context.realRobot` or `context.controlRobot` directly);
 - `context.controllerJointOrder` for canonical controller order;
 - `context.policyJointControllerIndices` for policy action order;
 - `context.qZeroControllerOrder` for the active default pose;

@@ -71,7 +71,8 @@ public:
   double policyStepSize() const { return policyStepSize_; }
   double policyRate() const { return 1.0 / policyStepSize_; }
   size_t policyUpdateCount() const { return policyUpdateCount_; }
-  const std::string & observationSource() const { return observationSource_; }
+  /** @brief Policy-wide observation_source of the active observations.yaml; entries may override it. */
+  const std::string & observationSource() const { return observationManager_.defaultSource(); }
   const std::string & baseBody() const { return baseBody_; }
   size_t controlledActionSize() const { return controlledActionControllerIndices_.size(); }
   double phase() const { return phaseNormalized_; }
@@ -124,7 +125,6 @@ private:
 
   void validateObservationAgainstNetwork() const;
   ObservationContext makeObservationContext(NewRLQPController & ctl);
-  mc_rbdyn::Robot & selectedObservationRobot(NewRLQPController & ctl);
 
 private:
   mc_rtc::Configuration controllerConfig_;
@@ -142,7 +142,6 @@ private:
 
   std::string robotName_;
   std::string baseBody_ = "base_link";
-  std::string observationSource_ = "realRobot";
 
   std::vector<std::string> controllerJointOrder_;
   /** @brief Maps active policy action index to controllerJointOrder_ index. policyJointControllerIndices in ObservationContext. */

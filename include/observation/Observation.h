@@ -58,10 +58,8 @@ struct ObservationConvention
 /**
  * @brief Runtime data passed to observations during configure() and compute().
  *
- * The observationRobot is selected once by RLPolicyRuntime according to
- * robot.observation_source in the controller configuration:
- * - realRobot: use ctl.realRobot(...), default
- * - robot: use ctl.robot()
+ * Both robots are provided; each observation reads the one selected by its
+ * observation_source (see ObservationConfig) through Observation::observedRobot().
  *
  * Joint-order convention:
  * - controllerJointOrder is mc_rtc's robot().refJointOrder().
@@ -71,8 +69,11 @@ struct ObservationConvention
  */
 struct ObservationContext
 {
-  /** @brief Selected robot state used to compute observations. */
-  mc_rbdyn::Robot & observationRobot;
+  /** @brief Measured robot state: ctl.realRobot(...). */
+  mc_rbdyn::Robot & realRobot;
+
+  /** @brief Control robot state: ctl.robot(). */
+  mc_rbdyn::Robot & controlRobot;
 
   /** @brief Robot base body used by base velocity and projected gravity observations. */
   std::string baseBody;
@@ -124,6 +125,14 @@ struct ObservationConfig
   /** @brief Number of samples stored by ObservationManager for this observation. */
   int history = 1;
 
+  /**
+   * @brief Robot the observation reads: realRobot (measured state) or robot (control state).
+   *
+   * Resolved by ObservationManager: parameters.observation_source of the entry, else the
+   * top-level observation_source of observations.yaml, else realRobot.
+   */
+  bool useRealRobot = true;
+
   /** @brief Observation-specific parameter block. */
   mc_rtc::Configuration parameters;
 };
@@ -144,6 +153,7 @@ public:
   const std::string & requestedType() const { return config_.requestedType; }
   const std::string & name() const { return config_.name; }
   int history() const { return config_.history; }
+  const char * observationSource() const { return config_.useRealRobot ? "realRobot" : "robot"; }
 
   /** @brief Resolve configuration-time data into runtime indices/state. */
   virtual void configure(const ObservationContext & context) = 0;
@@ -155,6 +165,12 @@ public:
   virtual void compute(const ObservationContext & context, Eigen::Ref<Eigen::VectorXd> out) const = 0;
 
 protected:
+  /** @brief Robot selected by this observation's observation_source. */
+  mc_rbdyn::Robot & observedRobot(const ObservationContext & context) const
+  {
+    return config_.useRealRobot ? context.realRobot : context.controlRobot;
+  }
+
   /** @brief Read a typed parameter with a fallback value. */
   template<typename T>
   T readParameter(const mc_rtc::Configuration & parameters,

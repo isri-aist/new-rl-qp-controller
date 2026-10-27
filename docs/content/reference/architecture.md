@@ -280,9 +280,7 @@ Consequently, controller joints that are not selected remain at their `q_zero` t
 
 ## Observation source
 
-The controller configuration selects which mc_rtc robot object is passed to the observation pipeline.
-
-The selected object is stored in `ObservationContext::observationRobot` and is used by observation implementations when they read robot state.
+`ObservationContext` carries both `realRobot` and `controlRobot`. Each observation picks one through `Observation::observedRobot(context)`, according to its resolved `observation_source`: the entry's parameter, else the top-level value of `observations.yaml`, else `realRobot`. See [Observation source](observations.md#observation-source).
 
 ---
 

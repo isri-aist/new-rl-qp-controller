@@ -59,6 +59,12 @@ public:
     std::deque<Eigen::VectorXd> historyBuffer;
   };
 
+  /** @brief Top-level observation_source of observations.yaml (realRobot if absent). */
+  const std::string & defaultSource() const
+  {
+    return defaultSource_;
+  };
+
   std::vector<Entry> entries()
   {
     return entries_;
@@ -71,13 +77,14 @@ public:
 private:
   /** @brief parse observations.yaml. Handles entries history here and leave observation-specific to respective
    * Observation class */
-  ObservationConfig parseObservationConfig(const mc_rtc::Configuration & config) const;
+  ObservationConfig parseObservationConfig(const mc_rtc::Configuration & config, bool defaultUseRealRobot) const;
   Eigen::VectorXd flattenHistory(const Entry & entry) const;
 
   std::vector<Entry> entries_;
   ObservationConvention convention_;
   int size_ = 0;
   bool newest_first_ = true;
+  std::string defaultSource_ = "realRobot";
 };
 
 } // namespace rlqp

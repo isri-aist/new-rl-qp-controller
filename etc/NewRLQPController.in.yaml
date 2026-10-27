@@ -18,8 +18,6 @@ robots:
 robot:
   # TODO(robot): adjust the body used by floating-base observations.
   base_body: base_link
-  # realRobot is usually appropriate on hardware; robot can be useful in simulation.
-  observation_source: realRobot
 
 collisions:
   - type: collision
