@@ -72,32 +72,25 @@ private:
 };
 
 /**
- * @brief Base velocity observation (angular part ω or linear part v), shared by base_ang_vel and base_lin_vel.
+ * @brief Where a velocity observation reads ω or v, and in which frame it outputs it.
  *
- * Source (pick one, default: body = base):
- *   body: base | <body name>   ω and v of the body origin from the observed robot state (any observer)
+ * Used by base_ang_vel and base_lin_vel; each observation entry has its own source and frame.
+ *
+ * Source (pick one, default: body = robot.base_body):
+ *   body: <body name>          ω and v of the body origin from the observed robot state (any observer)
  *   sensor: <body sensor name> ω (or v) read from a BodySensor
  *
  * sensor_frame: world | local   frame the sensor stores its velocity in
- *                               default: world for "FloatingBase" (mc_mujoco ground truth),
+ *                               default: for "FloatingBase" (mc_mujoco free joint qvel), world for v and local for ω,
  *                                        local for any other sensor (a gyro measures ω in its own frame)
  *
  * frame: local | world | heading  output frame (default: local)
  *   local   : frame of the body (or of the sensor)
  *   world   : world frame
- *   heading : world frame rotated by the base yaw only (yaw-aligned, gravity stays on z)
+ *   heading : world frame rotated by the source yaw only (yaw-aligned, gravity stays on z)
  */
-class BaseVelocityObservation : public Observation
+struct VelocitySource
 {
-public:
-  void configure(const ObservationContext & context) override;
-  int size() const override { return 3; }
-  void compute(const ObservationContext & context, Eigen::Ref<Eigen::VectorXd> out) const override;
-
-protected:
-  BaseVelocityObservation(const ObservationConfig & config, const ObservationConvention & convention, bool angular);
-
-private:
   enum class Frame
   {
     Local,
@@ -105,33 +98,47 @@ private:
     Heading
   };
 
-  bool angular_;
-  bool useSensor_ = false;
-  bool sensorIsWorld_ = false;
-  std::string sensorName_;
-  int bodyIndex_ = -1;
-  Frame frame_ = Frame::Local;
+  bool useSensor = false;
+  bool sensorIsWorld = false;
+  std::string sensorName;
+  int bodyIndex = -1;
+  Frame frame = Frame::Local;
+
+  void configure(const std::string & obsName,
+                 const mc_rtc::Configuration & parameters,
+                 const ObservationContext & context,
+                 bool angular);
+  Eigen::Vector3d read(const ObservationContext & context, bool angular) const;
+};
+
+/** @brief Angular velocity ω of the base, or of any body (see VelocitySource for parameters). */
+class BaseAngVelObservation : public Observation
+{
+public:
+  BaseAngVelObservation(const ObservationConfig & config, const ObservationConvention & convention);
+
+  void configure(const ObservationContext & context) override;
+  int size() const override { return 3; }
+  void compute(const ObservationContext & context, Eigen::Ref<Eigen::VectorXd> out) const override;
+
+private:
+  VelocitySource source_;
   Eigen::VectorXd scale_;
 };
 
-/** @brief Base angular velocity ω (see BaseVelocityObservation for parameters). */
-class BaseAngVelObservation : public BaseVelocityObservation
+/** @brief Linear velocity v of the base origin, or of any body (see VelocitySource for parameters). */
+class BaseLinVelObservation : public Observation
 {
 public:
-  BaseAngVelObservation(const ObservationConfig & config, const ObservationConvention & convention)
-  : BaseVelocityObservation(config, convention, true)
-  {
-  }
-};
+  BaseLinVelObservation(const ObservationConfig & config, const ObservationConvention & convention);
 
-/** @brief Base linear velocity v of the body origin (see BaseVelocityObservation for parameters). */
-class BaseLinVelObservation : public BaseVelocityObservation
-{
-public:
-  BaseLinVelObservation(const ObservationConfig & config, const ObservationConvention & convention)
-  : BaseVelocityObservation(config, convention, false)
-  {
-  }
+  void configure(const ObservationContext & context) override;
+  int size() const override { return 3; }
+  void compute(const ObservationContext & context, Eigen::Ref<Eigen::VectorXd> out) const override;
+
+private:
+  VelocitySource source_;
+  Eigen::VectorXd scale_;
 };
 
 /** @brief Last raw policy action. */
@@ -176,7 +183,7 @@ private:
  *
  * Source (pick one, default: sensor = Accelerometer):
  *   sensor: <body sensor name>  orientation of a BodySensor (filled by the simulator, the IMU or an observer)
- *   body: base | <body name>    orientation from the observed robot state (any floating-base observer)
+ *   body: <body name>           orientation from the observed robot state (any floating-base observer)
  */
 class BaseOrientationObservation : public Observation
 {

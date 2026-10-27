@@ -86,33 +86,33 @@ The named body must exist on the selected observation robot.
 
 ### `base_ang_vel`
 
-Angular velocity ω of the base.
+Angular velocity ω of the base, or of any body.
 
 | Property | Value |
 |---|---|
 | Size | 3 |
-| Parameters | `body` (default `base`) or `sensor`, `sensor_frame`, `frame` (default `local`), `scale` |
+| Parameters | `body` (defaults to `robot.base_body`) or `sensor`, `sensor_frame`, `frame` (default `local`), `scale` |
 
 ### `base_lin_vel`
 
-Linear velocity v of the base origin.
+Linear velocity v of the base origin, or of any body origin.
 
 | Property | Value |
 |---|---|
 | Size | 3 |
-| Parameters | `body` (default `base`) or `sensor`, `sensor_frame`, `frame` (default `local`), `scale` |
+| Parameters | `body` (defaults to `robot.base_body`) or `sensor`, `sensor_frame`, `frame` (default `local`), `scale` |
 
-**Source** (`base_ang_vel` and `base_lin_vel`)
+**Source** (`base_ang_vel` and `base_lin_vel`, set independently on each entry)
 
 | Parameter | Reads | Typical use |
 |---|---|---|
-| `body: base` (default) or `body: <name>` | ω and v of the body origin from the observed robot, written by whichever floating-base observer runs | real robot and simulation |
-| `sensor: FloatingBase` | simulator ground truth filled by mc_mujoco, in the world frame | simulation only |
+| `body: <name>` (default `robot.base_body`) | ω and v of the body origin from the observed robot, written by whichever floating-base observer runs | real robot and simulation |
+| `sensor: FloatingBase` | simulator ground truth filled by mc_mujoco: v in the world frame, ω in the local frame (MuJoCo free joint convention) | simulation only |
 | `sensor: <IMU>` | the IMU gyro, ω in the sensor frame | `base_ang_vel` only |
 
 An IMU does not measure v, so `base_lin_vel` with an IMU sensor raises an error. If your interface does fill a linear velocity, set `sensor_frame` explicitly to allow it.
 
-`sensor_frame` (`world` or `local`) says how the sensor stores its velocity. It defaults to `world` for `FloatingBase` and to `local` for any other sensor.
+`sensor_frame` (`world` or `local`) says how the sensor stores its velocity. For `FloatingBase` it defaults to `world` for v and `local` for ω. For any other sensor it defaults to `local`.
 
 **Output frame** (`frame`)
 
@@ -120,7 +120,7 @@ An IMU does not measure v, so `base_lin_vel` with an IMU sensor raises an error.
 |---|---|
 | `local` (default) | frame of the source body or sensor; what most locomotion policies use |
 | `world` | world frame |
-| `heading` | world frame rotated by the base yaw only: x forward and y left in the horizontal plane, z vertical |
+| `heading` | world frame rotated by the source yaw only: x forward and y left in the horizontal plane, z vertical |
 
 The `world` and `heading` outputs need the source orientation. With `body`, it comes from the observer. With `sensor`, it comes from the sensor orientation, which the simulator, the IMU, or an observer (Tilt with `updateSensor`) must fill.
 
@@ -160,7 +160,7 @@ Roll, pitch, and yaw of the base.
 | Property | Value |
 |---|---|
 | Default size | 3 |
-| Parameters | `sensor` (default `Accelerometer`) or `body` (`base` or a body name), `index` (default `[0,1,2]`), `scale` |
+| Parameters | `sensor` (default `Accelerometer`) or `body` (a body name), `index` (default `[0,1,2]`), `scale` |
 
 With `sensor`, the orientation comes from the body sensor, so something must fill it: the simulator, the IMU, or an observer such as Tilt with `updateSensor`. With `body`, it comes from the observed robot, written by whichever floating-base observer runs, so it works the same with Tilt, MCWaiko or BodySensor.
 

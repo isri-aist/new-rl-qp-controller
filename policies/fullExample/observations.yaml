@@ -39,20 +39,27 @@ observations:
   - type: base_ang_vel
     parameters:
       history: 1
-      # Optional. Defaults to "Accelerometer".
-      sensor: Accelerometer
+      # Optional source, pick one. Defaults to body = robot.base_body (observer estimate).
+      body: baseBodyName # OR sensor: FloatingBase (simulation) OR sensor: Accelerometer (IMU gyro)
+      # Optional, only with sensor: world | local. FloatingBase: world for v, local for ω. Others: local.
+      # sensor_frame: local
+      # Optional output frame: local | world | heading. Defaults to local.
+      frame: local
       scale: [1.0, 1.0, 1.0]
 
   - type: base_lin_vel
     parameters:
       history: 1
-      sensor: Accelerometer
+      # Same parameters as base_ang_vel. An IMU does not measure v: use body or sensor: FloatingBase.
+      body: baseBodyName
+      frame: local
       scale: [1.0, 1.0, 1.0]
 
   - type: base_orientation
     parameters:
       history: 1
-      sensor: Accelerometer
+      # Optional source, pick one. Defaults to sensor = Accelerometer.
+      sensor: Accelerometer # OR body: baseBodyName (observer estimate)
       # Optional RPY component indices. Defaults to [0, 1, 2].
       index: [0, 1, 2]
       scale: [1.0, 1.0, 1.0]
