@@ -26,14 +26,13 @@ bool parseObservationSource(const std::string & source, const std::string & wher
 ObservationManager::ObservationManager() {}
 
 void ObservationManager::load(const mc_rtc::Configuration & observationsConfig,
-                              const mc_rtc::Configuration & controllerConfig,
+                              const ObservationConvention & convention,
                               const ObservationRegistry & registry)
 {
   entries_.clear();
   size_ = 0;
 
-  const std::string conventionName = observationsConfig("training_convention", std::string("mjlab"));
-  convention_ = ObservationConvention::fromConfig(controllerConfig, conventionName);
+  convention_ = convention;
 
   if(!observationsConfig.has("observations"))
     mc_rtc::log::error_and_throw("[ObservationManager] observations.yaml has no required 'observations' list");

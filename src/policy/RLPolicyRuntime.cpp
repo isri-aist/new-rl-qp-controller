@@ -169,9 +169,7 @@ void RLPolicyRuntime::loadPolicy(const std::string & policyName,
 
   configureControl(policy, ctl, torqueTask);
 
-  const std::string conventionName =
-    policy.observationsConfiguration("training_convention", std::string("mjlab"));
-  activeConvention_ = ObservationConvention::fromConfig(controllerConfig_, conventionName);
+  activeConvention_ = policy.convention;
 
   configureAction(policy, ctl);
   configureNetwork(policy);
@@ -291,11 +289,9 @@ void RLPolicyRuntime::configureAction(const PolicyConfig & policy,
 
   actionScale_ = Eigen::Map<const Eigen::VectorXd>(policy.actionScale.data(), policy.actionScale.size());
 
-  if (!policy.defaultPosition.empty())
-  {
-    q_zero_ = Eigen::Map<const Eigen::VectorXd>(policy.defaultPosition.data(), policy.defaultPosition.size());
-  }
-  else
+  // NaN entries: neither the ONNX metadata nor policy.yaml gives a q0, use the posture task
+  q_zero_ = Eigen::Map<const Eigen::VectorXd>(policy.defaultPosition.data(), policy.defaultPosition.size());
+  if(q_zero_.hasNaN())
   {
     size_t i = 0;
     std::shared_ptr<mc_tasks::PostureTask> FSMPostureTask = ctl.getPostureTask(ctl.robot().name());
@@ -304,7 +300,7 @@ void RLPolicyRuntime::configureAction(const PolicyConfig & policy,
       const std::string& joint_name = j.name();
       if (j.type() == rbd::Joint::Type::Rev) {
         if (const auto& t = posture[ctl.robot().jointIndexByName(joint_name)]; !t.empty()) {
-          q_zero_(i) =t[0];
+          if(std::isnan(q_zero_(i))) q_zero_(i) = t[0];
           i++;
         }
       }
@@ -354,7 +350,7 @@ void RLPolicyRuntime::configureNetwork(const PolicyConfig & policy)
 void RLPolicyRuntime::configureObservations(const PolicyConfig & policy,
                                             NewRLQPController & ctl)
 {
-  observationManager_.load(policy.observationsConfiguration, controllerConfig_, observationRegistry_);
+  observationManager_.load(policy.observationsConfiguration, activeConvention_, observationRegistry_);
   observationManager_.configure(makeObservationContext(ctl));
   for(const auto & entry : observationManager_.entries())
   {
@@ -364,6 +360,30 @@ void RLPolicyRuntime::configureObservations(const PolicyConfig & policy,
                         observationManager_.defaultSource());
   }
   currentObservation_ = Eigen::VectorXd::Zero(policy_->getObservationSize());
+
+  // Term names are free in the training config, so a name mismatch could very much be normal -> warning
+  const std::vector<std::string> & expected = policy.metadata.observationNames;
+  if(expected.empty()) return;
+  const auto entries = observationManager_.entries();
+  std::vector<std::string> mismatches;
+  for(size_t i = 0; i < std::max(expected.size(), entries.size()); ++i)
+  {
+    const std::string onnx = i < expected.size() ? expected[i] : "<none>";
+    if(i < entries.size())
+    {
+      const Observation & obs = *entries[i].observation;
+      if(onnx == obs.name() || onnx == obs.requestedType() || onnx == obs.type()) continue;
+      mismatches.push_back(fmt::format("#{}: observations.yaml '{}', ONNX '{}'", i, obs.name(), onnx));
+    }
+    else
+      mismatches.push_back(fmt::format("#{}: observations.yaml <none>, ONNX '{}'", i, onnx));
+  }
+  if(mismatches.empty()) return;
+  std::string list;
+  for(const auto & m : mismatches) list += "\n  " + m;
+  mc_rtc::log::warning("[RLPolicyRuntime:{}] observations.yaml does not match the ONNX observation_names (order "
+                       "matters). Check the order, or set 'name' on an entry to the ONNX term name:{}",
+                       policy.name, list);
 }
 
 void RLPolicyRuntime::resetObservationHistory(NewRLQPController & ctl)

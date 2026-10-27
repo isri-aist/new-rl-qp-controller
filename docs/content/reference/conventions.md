@@ -4,7 +4,7 @@ title: Training conventions
 
 # Training conventions
 
-A convention describes how controller-side data is translated into the representation expected by a training environment.
+A convention, specified in `conventions.yaml`, describes how controller-side data is translated into the representation expected by a training environment.
 
 It can define:
 
@@ -22,7 +22,18 @@ A convention changes representation, not semantics. Always compare it with the a
 
 ## Is a convention required? { #is-a-convention-required }
 
-Most of it is completely **optional**, and a simple help for the user to have clearer and cleaner configurations for his policies. The only necessary content in this file is defining an `all` field to specify the robot's joint order.
+A convention is **optional**: it is a help to keep policy configurations short and clear.
+
+The one thing the controller needs is the policy's joint order, as the `all` joint group. `action.joints` uses it by default. It comes from, in order:
+
+1. the ONNX metadata `joint_names`, when the exporter stored it (see [ONNX metadata](policy-options.md#onnx-metadata)), in which case `training_convention` can be omitted entirely;
+2. otherwise, the `all` group of the policy's convention.
+
+!!! tip "Check the ONNX file first"
+    Before writing a convention, run `python3 scripts/inspect_policy.py <model.onnx>` (it needs `pip install onnxruntime`). Its `Metadata` section tells all the fields provided, including `joint_names`, and prints them.
+
+!!! warning
+    `all` is needed. It will fail if the ONNX metadata do not provide it and neither does the `conventions.yaml` fie. If both provide it, they must be identical.
 
 Named groups exist to avoid repeating the same joint list across many observations, and across every policy that shares a convention — reach for one once a list like `legs` above shows up more than a couple of times; inline it directly when it doesn't. `type_aliases` and `observation_defaults` are optional in the same spirit: conveniences for policies that would otherwise repeat themselves, not requirements.
 
@@ -51,7 +62,7 @@ conventions:
       # other example : legs: [hip_yaw, hip_roll, hip_pitch, knee, ankle_pitch, ankle_roll]
 ```
 
-This is the **minimum required**: one convention name, at least one joint group (typically `all`), with joint order matching your training exactly.
+When the ONNX file has no `joint_names` metadata, this is the minimum: one convention with an `all` group whose order matches your training exactly.
 
 Joint groups can be used to specify either the action joints or the joints to consider for a specific observation.
 
@@ -113,7 +124,7 @@ Named joint groups define subsets and their order. They are used by:
 
 **The joint order must match your training environment exactly.** Reordering or omitting joints will produce incorrect behavior.
 
-At minimum, define `all` to represent the complete actuated joint set in training order.
+Without ONNX `joint_names` metadata, define `all` to represent the complete actuated joint set in training order. With it, `all` comes from the ONNX file and does not need to be defined here.
 
 ```yaml
 conventions:
@@ -187,7 +198,7 @@ This means a policy's explicit parameters always take precedence.
 ## Validation checklist
 
 - [ ] Every `joint_groups` entry order matches training/export order exactly.
-- [ ] The `training_convention` referenced by each policy exists in this file.
+- [ ] The `training_convention` referenced by each policy exists in this file (or is omitted when the ONNX metadata provides `joint_names`).
 - [ ] All `type_aliases` values are registered internal observation types (see [Available observations](observations.md)).
 - [ ] Every observation name used in `observations.yaml` resolves either directly or through an alias.
 - [ ] `observation_defaults` — both in `conventions.general` and the convention profile — match your training setup.

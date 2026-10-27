@@ -214,6 +214,24 @@ void RLPolicyInterface::loadPolicy(const std::string & path)
   }
 }
 
+std::map<std::string, std::string> RLPolicyInterface::readMetadata(const std::string & policyPath)
+{
+  std::map<std::string, std::string> out;
+  if(!std::filesystem::exists(policyPath)) return out;
+
+  // CPU-only session: only used to read the model header
+  Ort::Env env(ORT_LOGGING_LEVEL_WARNING, "RLPolicyMetadata");
+  Ort::SessionOptions options;
+  options.SetIntraOpNumThreads(1);
+  Ort::Session session(env, policyPath.c_str(), options);
+
+  Ort::AllocatorWithDefaultOptions allocator;
+  const Ort::ModelMetadata metadata = session.GetModelMetadata();
+  for(const auto & key : metadata.GetCustomMetadataMapKeysAllocated(allocator))
+    out[key.get()] = metadata.LookupCustomMetadataMapAllocated(key.get(), allocator).get();
+  return out;
+}
+
 Eigen::VectorXd RLPolicyInterface::predict(const Eigen::VectorXd & observation)
 {
   if(!isLoaded_)

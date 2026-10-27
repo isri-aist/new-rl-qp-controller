@@ -7,14 +7,19 @@ name: fullExample
 # Optional. Defaults to <name>.onnx.
 onnx: fullExample.onnx
 
+# Optional. Defaults to true. Uses the training data stored in the ONNX file (joint order, q0, action scale,
+# kp, kd, observation names), and cross-checks it with this file. See the ONNX metadata docs.
+use_onnx_metadata: true
+
 action:
-  # Required. Joint group defining the ONNX action vector order and size.
+  # Optional. Defaults to all. Joint group defining the ONNX action vector order and size.
   joints: all
 
   # Optional. Defaults to action.joints. Used when only a subset of joints should be applied (ex: policy outputs all joints while only legs should be used)
   controlled_joints: joint_subset
 
-  # Optional. May be either one scalar for every joint...
+  # Optional. The ONNX metadata value wins when present.
+  # May be either one scalar for every joint...
   # scale: 1.0
   # ...or a complete or partial per-joint map. Unspecified joints use 1.0.
   scale:
@@ -22,7 +27,7 @@ action:
     jointName2: 1.0
     jointName3: 1.0
 
-  # Optional. When present, this map must contain every controller joint.
+  # Optional. The ONNX metadata value wins when present. Joints with no value use the posture task.
   q0:
     jointName1: 0.0
     jointName2: 0.0
@@ -44,7 +49,8 @@ control:
   # Optional unless a phase observation is used. Defaults to 1.0 s.
   phase_period: 1.0
 
-  # Required maps. They must contain every joint in robot().refJointOrder().
+  # Every joint in robot().refJointOrder() needs a value, here or in the ONNX metadata.
+  # Values here win over the metadata.
   kp:
     jointName1: 100.0
     jointName2: 100.0

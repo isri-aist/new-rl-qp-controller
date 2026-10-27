@@ -19,7 +19,17 @@ For the full semantics of this file, see the [Training conventions reference](..
 
 !!! warning
 
-    An `all` entry containing all joints in the order used by the policy is **necessary**. This is needed to handle the policy appropriately. The rest of the options are completely optional.
+    The controller needs the policy's joint order as the `all` group. If the ONNX file stores `joint_names` in its metadata (mjlab exports do), `all` comes from there and this file is optional. Otherwise, an `all` entry with every joint in the order used by the policy is **necessary**. The rest of the options are always optional.
+
+## Check what the ONNX file already provides
+
+If you have any doubts on the policy's metadata, the inspection script can be ran on the exported model, wherever it currently is (it is copied into `policies/unitree/` in the next step):
+
+```bash
+python3 scripts/inspect_policy.py path/to/policy.onnx
+```
+
+It needs the `onnxruntime` Python package (`pip install onnxruntime`). If its `Metadata` section lists `joint_names`, the joint order below is already in the file, and the `all` group is optional. The `unitree_rl_mjlab` export does provide it: the convention below is kept as the example for policies whose exporter doesn't. [Inspect the policy](07-running-and-validating.md#metadata) describes the rest of its output.
 
 ## Where the joint order comes from
 

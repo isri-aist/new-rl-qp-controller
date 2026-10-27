@@ -28,7 +28,7 @@ public:
    * Call configure() after the runtime has a valid ObservationContext.
    */
   void load(const mc_rtc::Configuration & observationsConfig,
-            const mc_rtc::Configuration & controllerConfig,
+            const ObservationConvention & convention,
             const ObservationRegistry & registry);
 
   /** @brief Resolve body/joint indices and compute the final vector size. */

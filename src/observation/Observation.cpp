@@ -2,6 +2,7 @@
 #include "observation/Observations.h"
 
 #include <algorithm>
+#include <fstream>
 #include <set>
 #include <sstream>
 
@@ -22,7 +23,7 @@ std::shared_ptr<Observation> makeObservation(const ObservationConfig & config,
   return std::shared_ptr<Observation>(new T(config, convention));
 }
 
-mc_rtc::Configuration loadConventionRoot(const mc_rtc::Configuration & controllerConfig)
+mc_rtc::Configuration loadConventionRoot(const mc_rtc::Configuration & controllerConfig, bool required)
 {
   if(controllerConfig.has("conventions"))
     return controllerConfig;
@@ -31,6 +32,8 @@ mc_rtc::Configuration loadConventionRoot(const mc_rtc::Configuration & controlle
   const std::string conventionsPath = policiesRoot + "/conventions.yaml";
 
   mc_rtc::Configuration conventionsConfig;
+  if(!required && !std::ifstream(conventionsPath).good())
+    return conventionsConfig;
   conventionsConfig.load(conventionsPath);
   return conventionsConfig;
 }
@@ -45,15 +48,18 @@ ObservationConvention ObservationConvention::fromConfig(const mc_rtc::Configurat
   ObservationConvention out;
   out.name = conventionName;
 
-  mc_rtc::Configuration conventionRoot = loadConventionRoot(controllerConfig);
+  // No training_convention: only the "general" defaults apply, if a conventions file exists
+  const bool required = !conventionName.empty();
+  mc_rtc::Configuration conventionRoot = loadConventionRoot(controllerConfig, required);
+  if(!required && !conventionRoot.has("conventions"))
+    return out;
   mc_rtc::Configuration conventions = conventionRoot("conventions");
 
-  if(!conventions.has(conventionName))
+  if(required && !conventions.has(conventionName))
     mc_rtc::log::error_and_throw(
       "[ObservationConvention] Requested convention '{}' does not exist",
       conventionName);
 
-  mc_rtc::Configuration cfg = conventions(conventionName);
 
   auto loadJointGroups = [&out](const mc_rtc::Configuration & source)
   {
@@ -102,6 +108,10 @@ ObservationConvention ObservationConvention::fromConfig(const mc_rtc::Configurat
     loadTypeAliases(general);
   }
 
+  if(!required)
+    return out;
+
+  mc_rtc::Configuration cfg = conventions(conventionName);
   loadJointGroups(cfg);
   loadObservationDefaults(cfg);
   loadTypeAliases(cfg);
@@ -149,6 +159,15 @@ std::vector<int> ObservationConvention::resolveJointControllerIndices(
         out.push_back(nameToIdx(rlIt->second[i]));
       return out;
     }
+
+    // A single name that is not a group: refuse instead of silently using the fallback order
+    std::string known;
+    for(const auto & group : jointGroups)
+      known += (known.empty() ? "" : ", ") + group.first;
+    mc_rtc::log::error_and_throw(
+      "[ObservationConvention] Unknown joint group '{}' (convention '{}'). Known groups: [{}]. The 'all' group comes "
+      "from the convention or from the ONNX metadata joint_names",
+      groupName, name, known);
   }
 
   // Check an explicit list of joint names

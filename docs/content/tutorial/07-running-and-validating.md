@@ -18,15 +18,17 @@ This matches the `onnx: policy.onnx` filename set in `policy.yaml`.
 !!! tip "Cleaning up the template's placeholder policies"
     `policies/minimalExample/` and `policies/fullExample/` were the template's placeholder policies (zero-byte ONNX files, generic joint names). They're not needed anymore now that `policies/unitree/` is a real policy — you can remove them, or keep them around as a reference for the file format. The `g1_rl_qp_controller` repository removes them.
 
-## Optional - Check the dimensions
+## Optional - Inspect the policy
 
-Before building, or in case of dimension mismatch error, verify the ONNX model's input/output sizes match what was just configured. The template ships a helper for this:
+Before building, or in case of a dimension mismatch error, check the ONNX model against what was just configured. The template ships a helper that prints the input/output sizes and the training metadata stored in the file:
 
 ```bash
 python3 scripts/inspect_policy.py policies/unitree/policy.onnx
 ```
 
-The script imports the `onnxruntime` Python package, which is separate from the C++ ONNX Runtime bundled with the template: install it with `pip install onnxruntime` if it isn't already available in your Python environment.
+The script imports the `onnxruntime` Python package, which is separate from the C++ ONNX Runtime bundled with the template: install it with `pip install onnxruntime` if it isn't already available in your Python environment. Add `--raw` to print long metadata values in full.
+
+### Dimensions
 
 You're checking it against the sizes implied by the previous two steps:
 
@@ -48,6 +50,17 @@ You're checking it against the sizes implied by the previous two steps:
 `inspect_policy.py`'s reported input and output shapes should read `98` and `29`. If they don't, work back through [Configure the observations](06-observations-configuration.md) and [Configure the policy](05-policy-configuration.md) — a mismatch here almost always means a term was skipped, an `all` group doesn't actually have 29 entries, or a `history` value doesn't match what's expected.
 
 The runtime performs this same check itself when loading and before every inference — see [Troubleshooting: ONNX input/action size mismatch](../troubleshooting.md#onnx-input-size-mismatch) if it fails at that point instead.
+
+### Metadata
+
+The `Metadata` section shows the training data the exporter stored in the file, as the controller will use it (see [ONNX metadata](../reference/policy-options.md#onnx-metadata)):
+
+- **Used by the controller**: each key the controller reads, and whether it is present, usable, or ignored (for example a list whose length doesn't match `joint_names`).
+- **Joint order**: the `all` group, with the per-joint kp, kd, q0 and action scale. Compare it with the `all` group of your convention, if you defined one: the controller refuses to load if they differ.
+- **Observation terms**: the input order. It should match the `observations.yaml` list entry for entry.
+- **Other keys**: everything else the exporter stored, for information.
+
+For the `unitree` policy, the 29 joints and the 7 terms `base_ang_vel, projected_gravity, command, phase, joint_pos, joint_vel, actions` are reported. `actions` is the `last_action` entry, which is why that entry sets `name: actions`. If the file has no metadata, the section says so: `policy.yaml` must then give every gain, and the convention the `all` group.
 
 ## Build
 

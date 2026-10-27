@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Eigen/Dense>
+#include <map>
 #include <string>
 #include <memory>
 
@@ -51,6 +52,13 @@ public:
    * @return Action dimension  
    */
   int getActionSize() const { return outputSize_; }
+
+  /**
+   * @brief Read the custom metadata (key/value strings) stored in an ONNX file
+   * @param policyPath Path to the .onnx file
+   * @return Metadata map, empty if the file has none
+   */
+  static std::map<std::string, std::string> readMetadata(const std::string & policyPath);
 
 private:
   int inputSize_;

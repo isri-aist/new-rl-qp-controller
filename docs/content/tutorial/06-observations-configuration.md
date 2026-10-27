@@ -119,10 +119,14 @@ observations:
       relative_to_default_velocity: true
 
   - type: last_action
+    # Optional : Renaming of the term - useful in logs or to match the ONNX metadata observation_names
+    name: actions
     parameters:
       history: 1
       joints: all
 ```
+
+The `name: actions` matches the term name stored in the ONNX file, so the controller's cross-check of the observation order passes without a warning (see [Inspect the policy](07-running-and-validating.md#metadata)).
 
 ## Where you should be now
 

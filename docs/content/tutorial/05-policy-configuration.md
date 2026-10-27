@@ -88,7 +88,7 @@ name: unitree
 onnx: policy.onnx
 
 action:
-  # Required. Joint group defining the ONNX action vector order and size.
+  # Optional. Defaults to all. Joint group defining the ONNX action vector order and size.
   joints: all
 
   # Optional. Defaults to action.joints. Used when only a subset of joints should be applied (ex: policy outputs all joints while only legs should be used)
@@ -128,7 +128,7 @@ action:
     right_wrist_pitch_joint: 0.07
     right_wrist_yaw_joint: 0.07
 
-  # Optional. When present, this map must contain every controller joint.
+  # Optional. Joints with no value use the ONNX metadata, then the posture task.
   q0:
     left_hip_pitch_joint: -0.1
     left_hip_roll_joint: 0
@@ -180,7 +180,7 @@ control:
   # Optional unless a phase observation is used. Defaults to 1.0 s.
   phase_period: 0.6
 
-  # Required maps. They must contain every joint in robot().refJointOrder().
+  # Every joint in robot().refJointOrder() needs a value, here or in the ONNX metadata.
   kp:
     left_hip_pitch_joint: 40.2
     left_hip_roll_joint: 99.1

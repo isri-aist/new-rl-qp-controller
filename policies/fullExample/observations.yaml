@@ -2,6 +2,7 @@
 # Every top-level field and every parameter currently accepted by the built-in
 # observations is represented.
 
+# Optional when the ONNX metadata provides joint_names (the "all" group). See conventions.yaml.
 training_convention: trainingConvention1
 
 # Optional. Defines the order in which to handle all observations history. Defaults to true.
