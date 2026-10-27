@@ -1122,7 +1122,6 @@
 <h2 id="base-body-and-observation-source">Base body and observation source<a class="headerlink" href="#base-body-and-observation-source" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><span class="nt">robot</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">base_body</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pelvis</span>
-<span class="w">  </span><span class="nt">observation_source</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">realRobot</span>
 </code></pre></div>
 <p>This is not native to mc_rtc but specific to this controller :</p>
 <ul>
@@ -1130,7 +1129,7 @@
 <p><code>base_body</code> is the default body used by floating-base observations (example : see <a href="../../reference/observations/#projected_gravity"><code>projected_gravity</code></a>) when they aren't given an explicit body or sensor. For G1's mc_rtc robot module, that's <code>pelvis</code>. The template's placeholder was <code>base_link</code> — check what your own robot module actually calls its floating-base body (<code>robot().mb().body(0).name()</code> or the module's documentation).</p>
 </li>
 <li>
-<p><code>observation_source: realRobot</code> is the correct default for hardware deployment: observations are computed from measured state, not the control robot's target state. It is left unchanged here.</p>
+<p>Observations read <code>realRobot</code> (measured state) by default, which is what hardware deployment needs. To change it, set <code>observation_source</code> per policy in <code>observations.yaml</code>, see <a href="../../reference/observations/#observation-source">Observation source</a>.</p>
 </li>
 </ul>
 <h2 id="observer-pipeline">Observer pipeline<a class="headerlink" href="#observer-pipeline" title="Permanent link">&para;</a></h2>
@@ -1196,8 +1195,6 @@
 
 <span class="nt">robot</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">base_body</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pelvis</span>
-<span class="w">  </span><span class="c1"># realRobot is usually appropriate on hardware; robot can be useful in simulation.</span>
-<span class="w">  </span><span class="nt">observation_source</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">realRobot</span>
 
 <span class="nt">collisions</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">collision</span>
@@ -1260,7 +1257,7 @@
   
     <span class="controller-page-date">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
-      <strong>Last updated:</strong> <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 23, 2026 08:46:57 UTC">October 23, 2026</span>
+      <strong>Last updated:</strong> <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 27, 2026 08:07:25 UTC">October 27, 2026</span>
     </span> -->
   
 
