@@ -72,22 +72,24 @@ private:
 };
 
 /**
- * @brief Where a velocity observation reads ω or v, and in which frame it outputs it.
+ * @brief Where a velocity observation reads ω or v, and in which frame it expresses it.
  *
  * Used by base_ang_vel and base_lin_vel; each observation entry has its own source and frame.
  *
  * Source (pick one, default: body = robot.base_body):
- *   body: <body name>          ω and v of the body origin from the observed robot state (any observer)
+ *   body: <robot frame name>   ω and v of the frame origin from the observed robot state (any observer).
+ *                              Any mc_rtc robot frame: a body, or a frame/surface from the robot module.
  *   sensor: <body sensor name> ω (or v) read from a BodySensor
  *
  * sensor_frame: world | local   frame the sensor stores its velocity in
  *                               default: for "FloatingBase" (mc_mujoco free joint qvel), world for v and local for ω,
  *                                        local for any other sensor (a gyro measures ω in its own frame)
  *
- * frame: local | world | heading  output frame (default: local)
- *   local   : frame of the body (or of the sensor)
- *   world   : world frame
- *   heading : world frame rotated by the source yaw only (yaw-aligned, gravity stays on z)
+ * frame: local | world | <robot frame name>  output frame (default: local)
+ *   local  : absolute velocity, in the axes of the source (body/frame, or sensor)
+ *   world  : absolute velocity, in world axes
+ *   <name> : velocity relative to that robot frame, in its axes, e.g. the hand velocity relative to the shoulder.
+ *            With body sources it only depends on the joints between the two frames, not on the floating base.
  */
 struct VelocitySource
 {
@@ -95,14 +97,17 @@ struct VelocitySource
   {
     Local,
     World,
-    Heading
+    Named
   };
 
   bool useSensor = false;
   bool sensorIsWorld = false;
   std::string sensorName;
-  int bodyIndex = -1;
+  /** Source robot frame, when !useSensor */
+  std::string sourceFrame;
   Frame frame = Frame::Local;
+  /** Output robot frame, when frame == Frame::Named */
+  std::string frameName;
 
   void configure(const std::string & obsName,
                  const mc_rtc::Configuration & parameters,

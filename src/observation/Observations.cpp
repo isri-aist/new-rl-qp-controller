@@ -215,6 +215,19 @@ void ProjectedGravityObservation::compute(const ObservationContext & context, Ei
 // VelocitySource (shared by base_ang_vel and base_lin_vel)
 //============================================================================//
 
+namespace
+{
+/**
+ * Velocity relative to frame f, in f axes, of a point at p (world) moving at vel (world axes, at p, absolute).
+ */
+sva::MotionVecd relativeTo(const mc_rbdyn::RobotFrame & f, const sva::MotionVecd & vel, const Eigen::Vector3d & p)
+{
+  const sva::PTransformd X_0_f = f.position();
+  const sva::MotionVecd velF_at_p = sva::PTransformd(Eigen::Vector3d(p - X_0_f.translation())) * f.velocity();
+  return sva::PTransformd(X_0_f.rotation()) * (vel - velF_at_p);
+}
+} // namespace
+
 void VelocitySource::configure(const std::string & obsName,
                                const mc_rtc::Configuration & parameters,
                                const mc_rbdyn::Robot & robot,
@@ -253,61 +266,65 @@ void VelocitySource::configure(const std::string & obsName,
   else
   {
     useSensor = false;
-    const std::string obs_body = body.empty() ? baseBody : body;
-    if(!robot.hasBody(obs_body))
-      mc_rtc::log::error_and_throw("[Observation:{}] Body '{}' does not exist on robot '{}'", obsName, obs_body,
+    sourceFrame = body.empty() ? baseBody : body;
+    if(!robot.hasFrame(sourceFrame))
+      mc_rtc::log::error_and_throw("[Observation:{}] Frame '{}' does not exist on robot '{}'", obsName, sourceFrame,
                                    robot.name());
-    bodyIndex = static_cast<int>(robot.mb().bodyIndexByName(obs_body));
   }
 
-  const std::string frameName = parameters("frame", std::string("local"));
-  if(frameName == "local")
+  const std::string outputFrame = parameters("frame", std::string("local"));
+  if(outputFrame == "local")
     frame = Frame::Local;
-  else if(frameName == "world")
+  else if(outputFrame == "world")
     frame = Frame::World;
-  else if(frameName == "heading")
-    frame = Frame::Heading;
+  else if(robot.hasFrame(outputFrame))
+  {
+    frame = Frame::Named;
+    frameName = outputFrame;
+  }
   else
-    mc_rtc::log::error_and_throw("[Observation:{}] frame must be 'local', 'world' or 'heading', got '{}'", obsName,
-                                 frameName);
+    mc_rtc::log::error_and_throw("[Observation:{}] frame must be 'local', 'world' or a frame of robot '{}', got '{}'",
+                                 obsName, robot.name(), outputFrame);
 }
 
 Eigen::Vector3d VelocitySource::read(const mc_rbdyn::Robot & robot, bool angular) const
 {
-  // R_0_x: orientation of the source frame in the world frame.
-  // sva rotations and BodySensor orientations both store R^T, hence the transposes.
-  Eigen::Matrix3d R_0_x;
-  Eigen::Vector3d valueLocal;
+  // sva rotations and BodySensor orientations store E_0_x = R_0_x^T: they map world axes to x axes.
   if(useSensor)
   {
     const auto & s = robot.bodySensor(sensorName);
-    R_0_x = s.orientation().normalized().toRotationMatrix().transpose();
     const Eigen::Vector3d raw = angular ? s.angularVelocity() : s.linearVelocity();
-    valueLocal = sensorIsWorld ? Eigen::Vector3d(R_0_x.transpose() * raw) : raw;
-  }
-  else
-  {
-    const auto idx = static_cast<size_t>(bodyIndex);
-    R_0_x = robot.mbc().bodyPosW[idx].rotation().transpose();
-    const auto & velB = robot.mbc().bodyVelB[idx]; // ω and v of the body origin, body frame
-    valueLocal = angular ? velB.angular() : velB.linear();
+    if(frame == Frame::Named)
+    {
+      // Sensor pose from the kinematic chain (sensor mounting X_b_s and joints)
+      const sva::PTransformd X_0_s = s.X_b_s() * robot.bodyPosW(s.parentBody());
+      const Eigen::Vector3d w = sensorIsWorld ? raw : Eigen::Vector3d(X_0_s.rotation().transpose() * raw);
+      // A sensor gives only ω or v: the other part is unknown, left at zero and not returned
+      const sva::MotionVecd vel = angular ? sva::MotionVecd(w, Eigen::Vector3d::Zero())
+                                          : sva::MotionVecd(Eigen::Vector3d::Zero(), w);
+      const sva::MotionVecd rel = relativeTo(robot.frame(frameName), vel, X_0_s.translation());
+      return angular ? rel.angular() : rel.linear();
+    }
+    const Eigen::Matrix3d E_0_s = s.orientation().normalized().toRotationMatrix();
+    if(frame == Frame::World) return sensorIsWorld ? raw : Eigen::Vector3d(E_0_s.transpose() * raw);
+    return sensorIsWorld ? Eigen::Vector3d(E_0_s * raw) : raw;
   }
 
+  const mc_rbdyn::RobotFrame & source = robot.frame(sourceFrame);
+  const sva::MotionVecd velW = source.velocity(); // ω and v of the frame origin, world axes
+  const Eigen::Vector3d w = angular ? velW.angular() : velW.linear();
   switch(frame)
   {
     case Frame::World:
-      return R_0_x * valueLocal;
-    case Frame::Heading:
+      return w;
+    case Frame::Named:
     {
-      const Eigen::Vector3d w = R_0_x * valueLocal;
-      const double yaw = std::atan2(R_0_x(1, 0), R_0_x(0, 0));
-      const double c = std::cos(yaw);
-      const double sn = std::sin(yaw);
-      return Eigen::Vector3d(c * w.x() + sn * w.y(), -sn * w.x() + c * w.y(), w.z());
+      const sva::MotionVecd rel = relativeTo(robot.frame(frameName), velW, source.position().translation());
+      return angular ? rel.angular() : rel.linear();
     }
     case Frame::Local:
     default:
-      return valueLocal;
+      return source.position().rotation() * w;
   }
 }
 

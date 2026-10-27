@@ -130,7 +130,7 @@ Linear velocity v of the base origin, or of any body origin.
 
 | Parameter | Reads | Typical use |
 |---|---|---|
-| `body: <name>` (default `robot.base_body`) | ω and v of the body origin from the observed robot, written by whichever floating-base observer runs | real robot and simulation |
+| `body: <frame>` (default `robot.base_body`) | ω and v of the frame origin from the observed robot, written by whichever floating-base observer runs. Any mc_rtc robot frame works: a body, or a frame or surface from the robot module | real robot and simulation |
 | `sensor: FloatingBase` | simulator ground truth filled by mc_mujoco: v in the world frame, ω in the local frame (MuJoCo free joint convention) | simulation only |
 | `sensor: <IMU>` | the IMU gyro, ω in the sensor frame | `base_ang_vel` only |
 
@@ -142,14 +142,22 @@ An IMU does not measure v, so `base_lin_vel` with an IMU sensor raises an error.
 
 | Value | Meaning |
 |---|---|
-| `local` (default) | frame of the source body or sensor; what most locomotion policies use |
-| `world` | world frame |
-| `heading` | world frame rotated by the source yaw only: x forward and y left in the horizontal plane, z vertical |
+| `local` (default) | absolute velocity, in the axes of the source frame or sensor; what most locomotion policies use |
+| `world` | absolute velocity, in world axes |
+| `<frame>` | velocity relative to any frame of the observed robot, in its axes; for example the hand velocity relative to the shoulder |
 
-The `world` and `heading` outputs need the source orientation. With `body`, it comes from the observer. With `sensor`, it comes from the sensor orientation, which the simulator, the IMU, or an observer (Tilt with `updateSensor`) must fill.
+```yaml
+- type: base_lin_vel
+  parameters:
+    body: r_hand        # whose velocity
+    frame: r_shoulder   # relative to which frame
+```
 
 !!! warning "IMU mounting"
-    With `sensor: <IMU>` and `frame: local`, ω is in the IMU frame. It equals the base frame only if the IMU is mounted without rotation on the base link.
+    With `sensor: <IMU>` and `frame: local`, ω is in the IMU axes. It equals the base axes only if the IMU is mounted without rotation on the base link. `frame: <base body>` does not fix this: it gives ω relative to the base, which is close to zero for an IMU on the base link.
+
+!!! note "Simulator and mc_rtc axis conventions"
+    `frame` cannot currently re-express a sensor's data in other axes. If a simulator and mc_rtc disagree on a sensor's axes, the data must be corrected before it reaches the observation, or a `body` source used instead.
 
 ### `last_action`
 

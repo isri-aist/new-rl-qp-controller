@@ -53,7 +53,7 @@ observations:
       body: baseBodyName # OR sensor: FloatingBase (simulation) OR sensor: Accelerometer (IMU gyro)
       # Optional, only with sensor: world | local. FloatingBase: world for v, local for ω. Others: local.
       # sensor_frame: local
-      # Optional output frame: local | world | heading. Defaults to local.
+      # Optional. local | world (absolute velocity, in source/world axes) | <robot frame name> (velocity relative to that frame). Defaults to local.
       frame: local
       scale: [1.0, 1.0, 1.0]
 
