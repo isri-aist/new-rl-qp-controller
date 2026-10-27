@@ -1520,7 +1520,7 @@
 </table>
 <p>The named body must exist on the selected observation robot.</p>
 <h3 id="base_ang_vel"><code>base_ang_vel</code><a class="headerlink" href="#base_ang_vel" title="Permanent link">&para;</a></h3>
-<p>Angular velocity ω of the base.</p>
+<p>Angular velocity ω of the base, or of any body.</p>
 <table>
 <thead>
 <tr>
@@ -1535,12 +1535,12 @@
 </tr>
 <tr>
 <td>Parameters</td>
-<td><code>body</code> (default <code>base</code>) or <code>sensor</code>, <code>sensor_frame</code>, <code>frame</code> (default <code>local</code>), <code>scale</code></td>
+<td><code>body</code> (defaults to <code>robot.base_body</code>) or <code>sensor</code>, <code>sensor_frame</code>, <code>frame</code> (default <code>local</code>), <code>scale</code></td>
 </tr>
 </tbody>
 </table>
 <h3 id="base_lin_vel"><code>base_lin_vel</code><a class="headerlink" href="#base_lin_vel" title="Permanent link">&para;</a></h3>
-<p>Linear velocity v of the base origin.</p>
+<p>Linear velocity v of the base origin, or of any body origin.</p>
 <table>
 <thead>
 <tr>
@@ -1555,11 +1555,11 @@
 </tr>
 <tr>
 <td>Parameters</td>
-<td><code>body</code> (default <code>base</code>) or <code>sensor</code>, <code>sensor_frame</code>, <code>frame</code> (default <code>local</code>), <code>scale</code></td>
+<td><code>body</code> (defaults to <code>robot.base_body</code>) or <code>sensor</code>, <code>sensor_frame</code>, <code>frame</code> (default <code>local</code>), <code>scale</code></td>
 </tr>
 </tbody>
 </table>
-<p><strong>Source</strong> (<code>base_ang_vel</code> and <code>base_lin_vel</code>)</p>
+<p><strong>Source</strong> (<code>base_ang_vel</code> and <code>base_lin_vel</code>, set independently on each entry)</p>
 <table>
 <thead>
 <tr>
@@ -1570,13 +1570,13 @@
 </thead>
 <tbody>
 <tr>
-<td><code>body: base</code> (default) or <code>body: &lt;name&gt;</code></td>
+<td><code>body: &lt;name&gt;</code> (default <code>robot.base_body</code>)</td>
 <td>ω and v of the body origin from the observed robot, written by whichever floating-base observer runs</td>
 <td>real robot and simulation</td>
 </tr>
 <tr>
 <td><code>sensor: FloatingBase</code></td>
-<td>simulator ground truth filled by mc_mujoco, in the world frame</td>
+<td>simulator ground truth filled by mc_mujoco: v in the world frame, ω in the local frame (MuJoCo free joint convention)</td>
 <td>simulation only</td>
 </tr>
 <tr>
@@ -1587,7 +1587,7 @@
 </tbody>
 </table>
 <p>An IMU does not measure v, so <code>base_lin_vel</code> with an IMU sensor raises an error. If your interface does fill a linear velocity, set <code>sensor_frame</code> explicitly to allow it.</p>
-<p><code>sensor_frame</code> (<code>world</code> or <code>local</code>) says how the sensor stores its velocity. It defaults to <code>world</code> for <code>FloatingBase</code> and to <code>local</code> for any other sensor.</p>
+<p><code>sensor_frame</code> (<code>world</code> or <code>local</code>) says how the sensor stores its velocity. For <code>FloatingBase</code> it defaults to <code>world</code> for v and <code>local</code> for ω. For any other sensor it defaults to <code>local</code>.</p>
 <p><strong>Output frame</strong> (<code>frame</code>)</p>
 <table>
 <thead>
@@ -1607,7 +1607,7 @@
 </tr>
 <tr>
 <td><code>heading</code></td>
-<td>world frame rotated by the base yaw only: x forward and y left in the horizontal plane, z vertical</td>
+<td>world frame rotated by the source yaw only: x forward and y left in the horizontal plane, z vertical</td>
 </tr>
 </tbody>
 </table>
@@ -1682,7 +1682,7 @@
 </tr>
 <tr>
 <td>Parameters</td>
-<td><code>sensor</code> (default <code>Accelerometer</code>) or <code>body</code> (<code>base</code> or a body name), <code>index</code> (default <code>[0,1,2]</code>), <code>scale</code></td>
+<td><code>sensor</code> (default <code>Accelerometer</code>) or <code>body</code> (a body name), <code>index</code> (default <code>[0,1,2]</code>), <code>scale</code></td>
 </tr>
 </tbody>
 </table>
@@ -1799,7 +1799,7 @@ force_sensor
   
     <span class="controller-page-date">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
-      <strong>Last updated:</strong> <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 24, 2026 10:16:57 UTC">October 24, 2026</span>
+      <strong>Last updated:</strong> <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 27, 2026 07:01:15 UTC">October 27, 2026</span>
     </span> -->
   
 
