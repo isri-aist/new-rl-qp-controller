@@ -179,6 +179,7 @@ void RLPolicyRuntime::loadPolicy(const std::string & policyName,
   phaseNormalized_ = 0.0;
   resetObservationHistory(ctl);
   validateObservationAgainstNetwork();
+  addLogObs(ctl);
 
   policyTimer_ = policyStepSize_;
   policyUpdateCount_ = 0;
@@ -350,6 +351,7 @@ void RLPolicyRuntime::configureNetwork(const PolicyConfig & policy)
 void RLPolicyRuntime::configureObservations(const PolicyConfig & policy,
                                             NewRLQPController & ctl)
 {
+  ctl.logger().removeLogEntries(this);
   observationManager_.load(policy.observationsConfiguration, activeConvention_, observationRegistry_);
   observationManager_.configure(makeObservationContext(ctl));
   for(const auto & entry : observationManager_.entries())
@@ -364,7 +366,7 @@ void RLPolicyRuntime::configureObservations(const PolicyConfig & policy,
   // Term names are free in the training config, so a name mismatch could very much be normal -> warning
   const std::vector<std::string> & expected = policy.metadata.observationNames;
   if(expected.empty()) return;
-  const auto entries = observationManager_.entries();
+  const auto & entries = observationManager_.entries();
   std::vector<std::string> mismatches;
   for(size_t i = 0; i < std::max(expected.size(), entries.size()); ++i)
   {
@@ -434,23 +436,19 @@ ObservationContext RLPolicyRuntime::makeObservationContext(NewRLQPController & c
 
 void RLPolicyRuntime::addLogObs(NewRLQPController & ctl)
 {
-  for(const auto & entry : observationManager_.entries())
+  // Callbacks read the live history buffers: capturing an Entry would log a frozen copy
+  const auto & entries = observationManager_.entries();
+  for(size_t e = 0; e < entries.size(); ++e)
   {
-    const std::string baseName = "NewRLQPController_Observations_" + entry.observation->name();
-    const size_t size = entry.historyBuffer.size();
-    if(size == 1)
+    const std::string baseName = "NewRLQPController_Observations_" + entries[e].observation->name();
+    const size_t size = entries[e].historyBuffer.size();
+    for(size_t i = 0; i < size; ++i)
     {
-      ctl.logger().addLogEntry(baseName, [entry]() { return entry.historyBuffer[0]; });
-    }
-    else if(size > 1)
-    {
-      for(size_t i = 0; i < size; ++i)
-      {
-        const size_t bufferIndex = observationManager_.newest_first() ? i : size - 1 - i;
-        const std::string suffix = i == 0 ? "_t" : "_t-" + std::to_string(i);
-        ctl.logger().addLogEntry(baseName + suffix,
-                                 [entry, bufferIndex]() { return entry.historyBuffer[bufferIndex]; });
-      }
+      // historyBuffer[0] is always the newest value, history_order_newest_first only affects the policy input
+      // The newest value keeps the plain name whatever the history length, so its log continues across policies
+      const std::string suffix = i == 0 ? "" : "_t-" + std::to_string(i);
+      ctl.logger().addLogEntry(baseName + suffix, this,
+                               [this, e, i]() { return observationManager_.entries()[e].historyBuffer[i]; });
     }
   }
 }

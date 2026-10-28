@@ -97,7 +97,7 @@ public:
   void setPDGainsRatio(double ratio,
                        const std::shared_ptr<mc_tasks::TorqueJointTask> & torqueTask);
 
-  /** @brief Add one logger entry per configured observation/history element. */
+  /** @brief Add one logger entry per configured observation/history element. Called on each policy load. */
   void addLogObs(NewRLQPController & ctl);
 
   Eigen::Vector3d & command() { return command_; }

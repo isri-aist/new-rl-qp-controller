@@ -252,8 +252,7 @@ void NewRLQPController::addLog()
   logger().addLogEntry("NewRLQPController_RL_phase", [this]() { return rlRuntime_.phase(); });
   logger().addLogEntry("NewRLQPController_RL_policy_period_s", [this]() { return rlRuntime_.policyStepSize(); });
   logger().addLogEntry("NewRLQPController_RL_update_count", [this]() { return rlRuntime_.policyUpdateCount(); });
-
-  rlRuntime_.addLogObs(*this);
+  // Observation entries are registered by RLPolicyRuntime on each policy load
 }
 
 void NewRLQPController::addGui()

@@ -65,11 +65,11 @@ public:
     return defaultSource_;
   };
 
-  std::vector<Entry> entries()
+  const std::vector<Entry> & entries() const
   {
     return entries_;
   };
-  bool newest_first()
+  bool newest_first() const
   {
     return newest_first_;
   };
